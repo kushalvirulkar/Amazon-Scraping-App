@@ -2,15 +2,95 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity2">
+    android:background="@color/white"
+    tools:context=".MainActivity">
 
     <LinearLayout
+        android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- TextView to display product name -->
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Product Name"
+            android:textSize="18sp"
+            android:padding="8dp"
+            android:textColor="#000000"/>
+
+        <!-- TextView to display product price -->
+        <TextView
+            android:id="@+id/price"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Product Price"
+            android:textSize="16sp"
+            android:padding="8dp"
+            android:textColor="#000000"/>
+
+        <!-- TextView to display product discount -->
+        <TextView
+            android:id="@+id/discount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Product discount"
+            android:textSize="16sp"
+            android:padding="8dp"
+            android:textColor="#000000"/>
+
+        <!-- TextView to display product description -->
+        <TextView
+            android:id="@+id/mrp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MRP"
+            android:textSize="14sp"
+            android:padding="8dp"
+            android:textColor="#000000"/>
+
+        <!-- TextView to display "About this item" -->
+        <TextView
+            android:id="@+id/about_this_item"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="About this item"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:textColor="#000000"/>
+
+        <!-- TextView to display "Product Information" -->
+        <TextView
+            android:id="@+id/technical_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Technical Details"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:textColor="#000000"/>
+
+        <TextView
+            android:id="@+id/additional_information"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Additional Information"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:textColor="#000000"/>
+
+        <TextView
+            android:id="@+id/product_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Product details"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:textColor="#000000"/>
 
         <EditText
             android:layout_width="match_parent"
@@ -22,7 +102,5 @@
             android:textSize="18sp"/>
 
     </LinearLayout>
-
-
 
 </ScrollView>

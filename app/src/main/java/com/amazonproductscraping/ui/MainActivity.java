@@ -2,6 +2,7 @@ package com.amazonproductscraping.ui;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,9 +17,9 @@ import java.io.IOException;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private TextView name, prices, mrp, aboutThisItem, productInfo, discountt;
-
-    String price,productName,productRating,productImage,aboutThisItemText,productInfoText,productDescription,oprice;
+    private EditText productDetails;
+    private TextView name,price,discountt,mrp,about_this_item,technical_details,additional_information,product_details;
+    private String productName,productPrice,discountPercentage,mrpPrice,formattedText,aboutThisItem,oprice,productInfoText;
 
     private double calculateOriginalPrice(double discountedPrice, double discountPercentage) {
         // Formula to calculate original price
@@ -32,11 +33,13 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize TextViews
         name = findViewById(R.id.name);
-        prices = findViewById(R.id.price);
-        mrp = findViewById(R.id.mrp);
-        aboutThisItem = findViewById(R.id.about_this_item);
-        productInfo = findViewById(R.id.product_info);
+        price = findViewById(R.id.price);
         discountt = findViewById(R.id.discount);
+        mrp = findViewById(R.id.mrp);
+        about_this_item = findViewById(R.id.about_this_item);
+        technical_details = findViewById(R.id.technical_details);
+        additional_information = findViewById(R.id.additional_information);
+        product_details = findViewById(R.id.product_details);
 
         // Web Scraping to fetch product data
         new Thread(new Runnable() {
@@ -59,11 +62,11 @@ public class MainActivity extends AppCompatActivity {
                     // CSS Selector के माध्यम से प्रोडक्ट का price प्राप्त करें
                     Element priceElement = doc.select("span.a-price-whole").first();
                     if (priceElement != null) {
-                        price = priceElement.text();  // Price को Text के रूप में प्राप्त करें
-                        Log.d("ProductPrice", "Product price: ₹" + price);
+                        productName = priceElement.text();  // Price को Text के रूप में प्राप्त करें
+                        Log.d("ProductPrice", "Product price: ₹" + productName);
 
                         // Clean the price string by removing commas
-                        String cleanedPrice = price.replace(",", "");  // Remove commas from price string
+                        String cleanedPrice = productName.replace(",", "");  // Remove commas from price string
                         try {
                             double discountedPrice = Double.parseDouble(cleanedPrice);  // Convert cleaned price to double
                             Log.d("DiscountedPrice", "Discounted price: ₹" + discountedPrice);
@@ -103,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                     // Extract "About this item" section
-                    aboutThisItemText = doc.select("div#feature-bullets ul").text();
+                    aboutThisItem = doc.select("div#feature-bullets ul").text();
 
 
 
@@ -123,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             // UI update here
-                            productInfo.setText(extractedText.toString());
+                            product_details.setText(extractedText.toString());
                         }
                     });
                     //===========================================================================================
@@ -133,33 +136,25 @@ public class MainActivity extends AppCompatActivity {
                     productInfoText = doc.select("span.a-section").text();
 
 
-                    productRating = doc.select("span#acrPopover").attr("title");
-                    productImage = doc.select("img#landingImage").attr("src");
-
-
 
                     // Log data (optional for debugging)
                     Log.d(TAG, "Product Name: " + productName);
                     Log.d(TAG, "Price: " + price);
-                    Log.d(TAG, "Description: " + productDescription);
-                    Log.d(TAG, "About this item: " + aboutThisItemText);
-                    Log.d(TAG, "Product Info: " + productInfoText);
 
                     // Update UI with product details in main thread
                     final String finalProductName = productName;
-                    final String finalProductPrice = price;
-                    final String finalProductDescription = productDescription;
-                    final String finalAboutThisItemText = aboutThisItemText;
+                    final String finalProductPrice = productPrice;
                     final String finalProductInfoText = productInfoText;
+                    final String finalAboutThisItemText = aboutThisItem;
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             name.setText(finalProductName);//ok
-                            prices.setText(finalProductPrice);//ok
+                            price.setText(finalProductPrice);//ok
                             discountt.setText(discount);//ok
                             mrp.setText(oprice);//ok
-                            aboutThisItem.setText(finalAboutThisItemText);//ok
+                            about_this_item.setText(finalAboutThisItemText);//ok
 
                         }
                     });
@@ -169,10 +164,9 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             name.setText("Error fetching data");
-                            prices.setText("");
+                            price.setText("");
                             mrp.setText("");
-                            aboutThisItem.setText("");
-                            productInfo.setText("");
+                            about_this_item.setText("");
                         }
                     });
                 }
