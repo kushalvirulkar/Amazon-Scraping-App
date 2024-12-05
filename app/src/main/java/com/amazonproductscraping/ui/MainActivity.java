@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     // Connect to Amazon product page
-                    Document doc = Jsoup.connect("https://www.amazon.in/dp/B0CBTTCJL6")
+                    Document doc = Jsoup.connect("https://www.amazon.in/ZENEME-Rhodium-Plated-Silver-Toned-Zirconia-Jewellery/dp/B0BQJL99KR/ref=sr_1_11?dib=eyJ2IjoiMSJ9.ulzDE9OweG7vcETL5c2FqRFRH6ithf_fdEFvVjUA2uT-hRVazOWz65rE16C43Jc8SxaznT_-RW-F9wbfQia8Gi-nOK7NVd8gPKLwwqEo6icvOPesFe_o-Ua1E0904hmzS_LFsQpzKubtI31AvCsn84n5vga4cTsP2H4Ng_9fAiUWHvI9-QJjStoEXjPm2DHro5gCbNVDNo8ZO6qc-UPXkJbU_KBnhRESfwmCEKo0bpxr9qLK1knzWNzWxnZGcCpP4th7rLnhD9QSyQOW4-LrYSKfDhqlYx9hALQju0VUNxc.lzzDC9foMrGkhGdM7t2H0FCx7JRiXIORehEVairDcTI&dib_tag=se&keywords=jewellery%2Bfor%2Bwomen&qid=1733335148&sr=8-11&th=1")
                             //.userAgent("Chrome/117.0.5938.92 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
                             .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.92 Safari/537.36")
                             .get();
@@ -102,6 +102,35 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         Log.d("ProductPrice", "Price not found.");
                     }
+
+
+                    // Extract "Additional Information" section
+                    Elements additionalInfoElements = doc.select("div#productDetails_detailBullets_sections1");
+                    if (!additionalInfoElements.isEmpty()) {
+                        final StringBuilder additionalInfoText = new StringBuilder();
+                        for (Element item : additionalInfoElements.select("tr")) {
+                            String key = item.select("th").text(); // Extract header text
+                            String value = item.select("td").text(); // Extract value text
+                            additionalInfoText.append(key).append(": ").append(value).append("\n");
+                        }
+
+                        // Update TextView in UI thread
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                additional_information.setText(additionalInfoText.toString());
+                            }
+                        });
+                    } else {
+                        Log.d(TAG, "Additional Information section not found.");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                additional_information.setText("Additional Information not available.");
+                            }
+                        });
+                    }
+
 
 
 
