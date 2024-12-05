@@ -105,20 +105,29 @@ public class MainActivity extends AppCompatActivity {
 
 
                     // Extract "Additional Information" section
-                    Elements additionalInfoElements = doc.select("div#productDetails_detailBullets_sections1");
+                    Elements additionalInfoElements = doc.select("div#qpeTitleTag_feature_div");
                     if (!additionalInfoElements.isEmpty()) {
                         final StringBuilder additionalInfoText = new StringBuilder();
-                        for (Element item : additionalInfoElements.select("tr")) {
-                            String key = item.select("th").text(); // Extract header text
-                            String value = item.select("td").text(); // Extract value text
-                            additionalInfoText.append(key).append(": ").append(value).append("\n");
+                        Log.d(TAG, "Additional Information section found.");
+
+                        for (Element row : additionalInfoElements.select("tr")) { // Loop through table rows
+                            String key = row.select("th").text(); // Extract the key (header text)
+                            String value = row.select("td").text(); // Extract the value (data text)
+
+                            // Debugging output for each key-value pair
+                            Log.d(TAG, "Key: " + key + ", Value: " + value);
+
+                            // Append key-value pair to the StringBuilder if both are non-empty
+                            if (!key.isEmpty() && !value.isEmpty()) {
+                                additionalInfoText.append(key).append(": ").append(value).append("\n");
+                            }
                         }
 
                         // Update TextView in UI thread
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                additional_information.setText(additionalInfoText.toString());
+                                additional_information.setText(additionalInfoText.toString()); // Set the extracted text
                             }
                         });
                     } else {
@@ -126,10 +135,11 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                additional_information.setText("Additional Information not available.");
+                                additional_information.setText("Additional Information not available."); // Show default message
                             }
                         });
                     }
+
 
 
 

@@ -19,7 +19,7 @@ import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity2 extends AppCompatActivity {
+public class Last_Update extends AppCompatActivity {
 
     private EditText productDetails;
     private TextView name,price,discount,mrp,about_this_item,technical_details,additional_information,product_details;
