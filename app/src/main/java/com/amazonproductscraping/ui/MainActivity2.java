@@ -1,16 +1,15 @@
 package com.amazonproductscraping.ui;
 
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -21,30 +20,20 @@ import java.util.regex.Pattern;
 
 public class MainActivity2 extends AppCompatActivity {
 
-    private EditText productDetails;
-    private TextView name,price,discount,mrp,about_this_item,technical_details,additional_information,product_details;
-    private String productName,productPrice,discountPercentage,mrpPrice,formattedText,aboutThisItem;
+    private TextView productDetails;
+    private static final String TAG = "MainActivity2";
 
-
-    //iss code se systmatic tarike se "About this item" ka data retrive karta hai sahi hai. ok
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
 
-        name = findViewById(R.id.name);
-        price = findViewById(R.id.price);
-        discount = findViewById(R.id.discount);
-        mrp = findViewById(R.id.mrp);
-        about_this_item = findViewById(R.id.about_this_item);
-        technical_details = findViewById(R.id.technical_details);
-        additional_information = findViewById(R.id.additional_information);
-        product_details = findViewById(R.id.product_details);
         productDetails = findViewById(R.id.productDetails);
 
-        String amazonUrl = "https://www.amazon.in/dp/B0CBTTCJL6"; // प्रोडक्ट URL
+        String amazonUrl = "https://www.amazon.in/Carlton-London-Women-Limited-Parfum/dp/B09MTR2HRP"; // आपका प्रोडक्ट URL
         new FetchAmazonDataTask().execute(amazonUrl);
     }
+
 
     private class FetchAmazonDataTask extends AsyncTask<String, Void, String> {
 
@@ -56,6 +45,7 @@ public class MainActivity2 extends AppCompatActivity {
                 URL urlObj = new URL(url);
                 HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
                 connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "Chrome/117.0.5938.92 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
                 connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
                 connection.setRequestProperty("Referrer", "https://www.google.com");
                 connection.setConnectTimeout(15000);
@@ -79,143 +69,205 @@ public class MainActivity2 extends AppCompatActivity {
                     Log.d("HTML_Response", htmlContent.toString());
 
                     // डेटा निकालें (Regex के जरिए)
-                    productName = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");
-                    productPrice = extractData(htmlContent.toString(), "<span class=\"a-price-whole\">([\\d,]+)</span>");
-                    discountPercentage = extractData(htmlContent.toString(), "class=\"a-size-large a-color-price savingPriceOverride.*?\">(-?\\d+%)</span>");
-                    mrpPrice = extractData(htmlContent.toString(), "M\\.R\\.P\\.:.*?<span class=\"a-offscreen\">₹([\\d,]+)</span>");
-                    aboutThisItem = extractAndFormatAboutThisItem(htmlContent.toString());
-
-                    formattedText = String.format("About This Item:\n\n%s", aboutThisItem);
-
-
+                    String productName = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");
+                    String productPrice = extractData(htmlContent.toString(), "<span id=\"priceblock_ourprice\".*?>(.*?)</span>");
+                    String aboutThisItem = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");
+                    String productInformation = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");
+                  //String additionalInformation = extractAndFormatTable(htmlContent.toString(), "<div id=\"productDetails_db_sections\".*?>(.*?)</div>");
+                    // additionalInformation = extractAndFormatTable(htmlContent.toString(), "<div id=\"productDetails_db_sections\"[^>]*>(.*?)</div>");
+                    String additionalInformation = extractAndFormatTableUsingJsoup(htmlContent.toString());
 
 
-                    // "About This Item" को format करें
-                    aboutThisItem = aboutThisItem != null ? extractAndFormatTable(aboutThisItem) : "Not Found";
+                    String productDetailsSection = extractData(htmlContent.toString(), "<div id=\"detailBulletsWrapper_feature_div\".*?>(.*?)</div>"); // Added this line
+
+
+                    // "About This Item" को साफ करें और पैराग्राफ से पहले डॉट जोड़ें
+                    aboutThisItem = aboutThisItem != null ? formatAboutThisItem(aboutThisItem) : "Not Found";
+                    productDetailsSection = productDetailsSection != null ? formatProductDetailsSection(productDetailsSection) : "Not Found";
+
+
+
+
+                    // "About This Item" को साफ करें
+                    aboutThisItem = aboutThisItem != null ? cleanHTMLTags(aboutThisItem) : "Not Found";
+                    additionalInformation = additionalInformation != null ? cleanHTMLTags(additionalInformation) : "Not Found";
+                    productDetailsSection = productDetailsSection != null ? cleanHTMLTags(productDetailsSection) : "Not Found"; // Clean productDetailsSection
 
                     // फॉर्मेटेड डेटा रिटर्न करें
-                    return "Product Name: " + (productName != null ? productName.trim() : "Not Found") +
-                            "\nPrice: " + (productPrice != null ? productPrice.trim() : "Not Found") +
-                            "\nAbout This Item: \n" + aboutThisItem;
+                    return formatProductData(productName, productPrice, aboutThisItem, productInformation, additionalInformation, productDetailsSection);
                 } else {
                     return "Failed to fetch data. Response code: " + responseCode;
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
-                return "Error: Unable to fetch data. Please try again later.";
+                return "Error: " + e.getMessage();
             }
         }
 
         @Override
         protected void onPostExecute(String result) {
-            name.setText(productName);
-            price.setText(productPrice);
-            discount.setText(discountPercentage);
-            mrp.setText(mrpPrice);
-            about_this_item.setText(formattedText);
-        }
-
-
-        private String extractAndFormatAboutThisItem(String html) {
-            StringBuilder formattedText = new StringBuilder();
-
-            // Extract the "ul" tag content within the "feature-bullets" div
-            String regex = "<ul class=\"a-unordered-list a-vertical a-spacing-mini\">(.*?)</ul>";
-            String ulContent = extractData(html, regex);
-
-            if (ulContent != null) {
-                // Extract each "li" tag content within the "ul" tag
-                Pattern pattern = Pattern.compile("<li.*?>\\s*<span.*?>(.*?)</span>\\s*</li>", Pattern.DOTALL);
-                Matcher matcher = pattern.matcher(ulContent);
-
-                // Header for "About This Item"
-                formattedText.append("******************************\n");
-                formattedText.append("About This Item\n");
-                formattedText.append("******************************\n\n");
-
-                int count = 1; // For numbering items
-                while (matcher.find()) {
-                    String listItem = matcher.group(1).trim();
-                    // Clean up HTML tags within the list item
-                    listItem = listItem.replaceAll("<[^>]*>", ""); // Remove any remaining HTML tags
-                    // Add to formatted text with newline
-
-                    //text ke samne number lagane ke liye ye code use hoga.
-                    //formattedText.append(count).append("• ").append(listItem).append("\n\n");
-                    formattedText.append("• ").append(listItem).append("\n\n");
-                    count++;
-                }
-            } else {
-                formattedText.append("******************************\n");
-                formattedText.append("About This Item: Not Found\n");
-                formattedText.append("******************************");
-            }
-
-            // Convert the plain text to a SpannableString with line breaks
-            SpannableString spannableText = new SpannableString(formattedText.toString());
-
-            // Example to apply a color to the text, you can modify this as per your need
-            spannableText.setSpan(new ForegroundColorSpan(Color.BLACK), 0, spannableText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            return spannableText.toString();
+            productDetails.setText(result);
         }
 
         private String extractData(String html, String regex) {
-            try {
-                // Trim and process the data
-                productPrice = productPrice != null ? productPrice.replace(",","").trim() : "Price not found";
-                discountPercentage = discountPercentage != null ? discountPercentage.replace("-", "").replace("%", "").trim() : "Discount not found";
-                mrpPrice = mrpPrice != null ? mrpPrice.replace(",","").trim() : "MRP not found";
-                productName = productName != null ? productName.trim().replaceAll("\\s+", " ") : "Not Found";
-
-
-                Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
-                Matcher matcher = pattern.matcher(html);
-                if (matcher.find()) {
-                    return matcher.group(1); // HTML कंटेंट को रिटर्न करें
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+            Matcher matcher = pattern.matcher(html);
+            if (matcher.find()) {
+                return matcher.group(1);
             }
             return null;
         }
 
-        private String cleanHTMLTags(String html) {
-            // HTML टैग्स हटाने के लिए Regex
-            String cleanedHtml = html.replaceAll("<[^>]*>", ""); // हटाए HTML टैग्स
-            cleanedHtml = cleanedHtml.replaceAll("&lrm;", ""); // हटाए &lrm; से जुड़ी स्ट्रिंग
-            cleanedHtml = cleanedHtml.replaceAll("&rlm;", ""); // हटाए &rlm; से जुड़ी स्ट्रिंग
-            cleanedHtml = cleanedHtml.replaceAll("About This Item", "");
-            cleanedHtml = cleanedHtml.replaceAll("See more product details", "");
-            cleanedHtml = cleanedHtml.replaceAll("       ", "");
+        private String extractAndFormatTable(String html, String regex) {
+            Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+            Matcher matcher = pattern.matcher(html);
+            if (matcher.find()) {
+                String tableHtml = matcher.group(1);
 
-            return cleanedHtml.trim();
+                // Extract rows (tr)
+                Pattern rowPattern = Pattern.compile("<tr>(.*?)</tr>", Pattern.DOTALL);
+                Matcher rowMatcher = rowPattern.matcher(tableHtml);
+
+                StringBuilder formattedDetails = new StringBuilder();
+                formattedDetails.append("-------- Product Information --------\n");
+
+                while (rowMatcher.find()) {
+                    String row = rowMatcher.group(1);
+
+                    // Extract header (th) and data (td)
+                    String header = extractData(row, "<th.*?>(.*?)</th>");
+                    String data = extractData(row, "<td.*?>(.*?)</td>");
+
+                    if (header != null && data != null) {
+                        // Clean and format
+                        formattedDetails.append("• ").append(header.trim()).append(": ").append(cleanHTMLTags(data.trim())).append("\n");
+                    }
+                }
+
+                formattedDetails.append("---------------------------------");
+                return formattedDetails.toString();
+            }
+            return null;
         }
 
-        private String extractAndFormatTable(String html) {
-            // Extracting and formatting the table or list content
+        private String formatProductData(String productName, String productPrice, String aboutThisItem, String productInformation, String additionalInformation, String productDetailsSection) {
+            StringBuilder formattedData = new StringBuilder();
+
+            // Product Name
+            formattedData.append("******************************\n");
+            formattedData.append("Product Name:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productName != null ? productName.trim() : "Not Found");
+            formattedData.append("\n\n");
+
+            // Product Price
+            formattedData.append("******************************\n");
+            formattedData.append("Price:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productPrice != null ? productPrice.trim() : "Not Found");
+            formattedData.append("\n\n");
+
+            // About This Item
+            formattedData.append("******************************\n");
+            formattedData.append("About This Item:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(aboutThisItem != null ? cleanHTMLTags(aboutThisItem.trim()) : "Not Found");
+            formattedData.append("\n\n");
+
+            // Product Information (Table)
+            formattedData.append("******************************\n");
+            formattedData.append("Product Information:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productInformation != null ? productInformation.trim() : "Not Found");
+            formattedData.append("\n\n");
+
+            // Additional Information
+            formattedData.append("******************************\n");
+            formattedData.append("Additional Information:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(additionalInformation != null ? cleanHTMLTags(additionalInformation.trim()) : "Not Found");
+            formattedData.append("\n\n");
+
+            /*// Product Details Section
+            formattedData.append("******************************\n");
+            formattedData.append("Product Details:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productDetailsSection != null ? cleanHTMLTags(productDetailsSection.trim()) : "Not Found");
+            formattedData.append("\n\n");*/
+
+            return formattedData.toString();
+        }
+
+        private String extractAndFormatTableUsingJsoup(String htmlContent) {
+            // Jsoup से HTML डॉक्यूमेंट बनाएं
+            Document doc = Jsoup.parse(htmlContent);
+
+            // productDetails_db_sections को ढूंढें
+            Element productDetailsSection = doc.select("div#productDetails_db_sections").first();
+
+            if (productDetailsSection != null) {
+                // अगर पाया गया तो इसे return करें
+                return productDetailsSection.text();
+            }
+            return "Not Found"; // अगर नहीं मिला तो "Not Found" लौटाएं
+        }
+
+        private String formatAboutThisItem(String aboutText) {
+            String cleanedText = cleanHTMLTags(aboutText);
+            String[] paragraphs = cleanedText.split("(?<=\\.|\\|)"); // '.' या '|' पर विभाजन
+
             StringBuilder formattedText = new StringBuilder();
+            formattedText.append("******************************\n");
+            formattedText.append("About This Item:\n");
+            formattedText.append("******************************\n");
+            for (String paragraph : paragraphs) {
+                if (!paragraph.trim().isEmpty()) {
+                    formattedText.append("• ").append(paragraph.trim()).append("\n\n");
+                }
+            }
+            return formattedText.toString().trim();
+        }
 
-            // Clean HTML tags first
-            String cleanedHtml = cleanHTMLTags(html);
 
-            // Split the content by bullet points or newlines
-            String[] items = cleanedHtml.split("•|\\n");
+        private String formatProductDetailsSection(String productDetailsHtml) {
+            // HTML टैग्स साफ करें
+            String cleanedText = cleanHTMLTags(productDetailsHtml);
 
-            // Format the extracted data with bullet points
-            for (String item : items) {
-                item = item.trim();
-                if (!item.isEmpty()) {
-                    // Append each item with a bullet point to make it look neat
-                    formattedText.append("• ").append(item).append("\n");
+            // डेटा को पैराग्राफ के आधार पर विभाजित करें (यहां हम "\n" के बाद हर पैराग्राफ को अलग करेंगे)
+            String[] details = cleanedText.split("\\r?\\n"); // नई लाइनों पर विभाजित
+
+            // फॉर्मेटेड टेक्स्ट तैयार करें
+            StringBuilder formattedText = new StringBuilder();
+            formattedText.append("******************************\n");
+            formattedText.append("Product Details:\n");
+            formattedText.append("******************************\n");
+
+            // हर पैराग्राफ के पहले डॉट जोड़ें
+            for (String detail : details) {
+                if (!detail.trim().isEmpty()) { // अगर पैराग्राफ खाली नहीं है
+                    formattedText.append("• ").append(detail.trim()).append("\n");
                 }
             }
 
-            // Return the formatted content
-            return formattedText.toString().trim();
+            // फॉर्मेटेड टेक्स्ट को रिटर्न करें
+            return formattedText.toString().trim(); // अंत में सफाई करें
+        }
+
+
+
+
+        private String cleanHTMLTags(String html) {
+            // HTML टैग्स हटाने के लिए Regex और &lrm; को हटाने के लिए
+            String cleanedHtml = html.replaceAll("<[^>]*>", ""); // हटाए HTML टैग्स
+            cleanedHtml = cleanedHtml.replaceAll("&lrm;", ""); // हटाए &lrm; से जुड़ी स्ट्रिंग
+            cleanedHtml = cleanedHtml.replaceAll("&rlm;", ""); // हटाए &rlm; से जुड़ी स्ट्रिंग
+            cleanedHtml = cleanedHtml.replaceAll("       ", "");
+
+            return cleanedHtml.trim(); // सफाई के बाद ट्रिम कर देना
         }
     }
+
 
 
 

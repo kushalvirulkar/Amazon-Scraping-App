@@ -42,7 +42,7 @@ public class Last_Update extends AppCompatActivity {
         product_details = findViewById(R.id.product_details);
         productDetails = findViewById(R.id.productDetails);
 
-        String amazonUrl = "https://www.amazon.in/dp/B0CBTTCJL6"; // प्रोडक्ट URL
+        String amazonUrl = "https://www.amazon.in/Carlton-London-Women-Limited-Parfum/dp/B09MTR2HRP?th=1"; // प्रोडक्ट URL
         new FetchAmazonDataTask().execute(amazonUrl);
     }
 
