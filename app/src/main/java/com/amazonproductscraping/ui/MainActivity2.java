@@ -4,6 +4,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -22,6 +23,9 @@ public class MainActivity2 extends AppCompatActivity {
 
     private TextView productDetails;
     private static final String TAG = "MainActivity2";
+    private boolean isSuccessful = false; // ट्रैक करें कि डेटा सफलतापूर्वक रिट्रीव हुआ या नहीं
+    private String productName,  aboutThisItem, productInformation, additionalInformation;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,80 +38,136 @@ public class MainActivity2 extends AppCompatActivity {
         new FetchAmazonDataTask().execute(amazonUrl);
     }
 
-
     private class FetchAmazonDataTask extends AsyncTask<String, Void, String> {
+
+        private boolean isSuccessful = false; // Track if the data was successfully retrieved
+        private static final int MAX_RETRY_COUNT = 3; // Maximum retry count
 
         @Override
         protected String doInBackground(String... urls) {
             String url = urls[0];
-            try {
-                // HTTP कनेक्शन सेट करें
-                URL urlObj = new URL(url);
-                HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("User-Agent", "Chrome/117.0.5938.92 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
-                connection.setRequestProperty("Referrer", "https://www.google.com");
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(15000);
+            int retryCount = 0;
+            String result = "Not Found";
 
-                // HTTP Response Code चेक करें
-                int responseCode = connection.getResponseCode();
-                Log.d("HTTP Response Code", String.valueOf(responseCode));
+            while (retryCount < MAX_RETRY_COUNT) {
+                try {
+                    // HTTP connection setup
+                    URL urlObj = new URL(url);
+                    HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                    connection.setRequestProperty("Referrer", "https://www.amazon.in");
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(15000);
+                    connection.setUseCaches(false);
 
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    // HTML कंटेंट पढ़ें
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    StringBuilder htmlContent = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        htmlContent.append(line);
+                    // Check HTTP response code
+                    int responseCode = connection.getResponseCode();
+                    Log.d("HTTP Response Code", String.valueOf(responseCode));
+
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        // Read HTML content
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                        StringBuilder htmlContent = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            htmlContent.append(line);
+                        }
+                        reader.close();
+
+                        // Extract data using Jsoup and regular expressions
+                        productName = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");
+                        aboutThisItem = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");
+                        productInformation = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");
+                        additionalInformation = extractAndFormatTableUsingJsoup(htmlContent.toString());
+
+                        aboutThisItem = aboutThisItem != null ? cleanHTMLTags(aboutThisItem) : "Not Found";
+                        additionalInformation = additionalInformation != null ? cleanHTMLTags(additionalInformation) : "Not Found";
+                        aboutThisItem = aboutThisItem != null ? formatAboutThisItem(aboutThisItem) : "Not Found";
+
+                        // Retry if "Not Found" is returned for additional information
+                        if (additionalInformation.equals("Not Found")) {
+                            retryCount++;
+                            Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
+                            continue; // Retry fetching data
+                        }
+
+                        // If all data is successfully retrieved
+                        if (productName != null || aboutThisItem != null || productInformation != null || additionalInformation != null) {
+                            isSuccessful = true; // Successfully retrieved data
+                            result = formatProductData(productName, aboutThisItem, productInformation, additionalInformation);
+                            break; // Exit loop after success
+                        }
                     }
-                    reader.close();
-
-                    // लॉग करें कि HTML क्या मिला है
-                    Log.d("HTML_Response", htmlContent.toString());
-
-                    // डेटा निकालें (Regex के जरिए)
-                    String productName = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");
-                    String productPrice = extractData(htmlContent.toString(), "<span id=\"priceblock_ourprice\".*?>(.*?)</span>");
-                    String aboutThisItem = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");
-                    String productInformation = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");
-                  //String additionalInformation = extractAndFormatTable(htmlContent.toString(), "<div id=\"productDetails_db_sections\".*?>(.*?)</div>");
-                    // additionalInformation = extractAndFormatTable(htmlContent.toString(), "<div id=\"productDetails_db_sections\"[^>]*>(.*?)</div>");
-                    String additionalInformation = extractAndFormatTableUsingJsoup(htmlContent.toString());
-
-
-                    String productDetailsSection = extractData(htmlContent.toString(), "<div id=\"detailBulletsWrapper_feature_div\".*?>(.*?)</div>"); // Added this line
-
-
-                    // "About This Item" को साफ करें और पैराग्राफ से पहले डॉट जोड़ें
-                    aboutThisItem = aboutThisItem != null ? formatAboutThisItem(aboutThisItem) : "Not Found";
-                    productDetailsSection = productDetailsSection != null ? formatProductDetailsSection(productDetailsSection) : "Not Found";
-
-
-
-
-                    // "About This Item" को साफ करें
-                    aboutThisItem = aboutThisItem != null ? cleanHTMLTags(aboutThisItem) : "Not Found";
-                    additionalInformation = additionalInformation != null ? cleanHTMLTags(additionalInformation) : "Not Found";
-                    productDetailsSection = productDetailsSection != null ? cleanHTMLTags(productDetailsSection) : "Not Found"; // Clean productDetailsSection
-
-                    // फॉर्मेटेड डेटा रिटर्न करें
-                    return formatProductData(productName, productPrice, aboutThisItem, productInformation, additionalInformation, productDetailsSection);
-                } else {
-                    return "Failed to fetch data. Response code: " + responseCode;
+                } catch (Exception e) {
+                    Log.i(TAG, "Error fetching data: " + e.getMessage());
+                    retryCount++; // Increment retry count on error
+                    Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
                 }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                return "Error: " + e.getMessage();
             }
+
+            return result;
         }
 
         @Override
         protected void onPostExecute(String result) {
-            productDetails.setText(result);
+            if (isSuccessful) {
+                productDetails.setText(result);
+                // Data retrieval successful
+                Toast.makeText(MainActivity2.this, "Image Load Successful...", Toast.LENGTH_SHORT).show();
+            } else {
+                // All attempts failed
+                Toast.makeText(MainActivity2.this, "Failed to retrieve data after multiple attempts.", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        private String formatProductData(String productName, String aboutThisItem, String productInformation, String additionalInformation) {
+
+            StringBuilder formattedData = new StringBuilder();
+
+            // Product Name
+            formattedData.append("******************************\n");
+            formattedData.append("Product Name:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productName != null ? productName.trim() : "Not Found");
+            formattedData.append("\n\n");
+
+            /*// Product Price
+            formattedData.append("******************************\n");
+            formattedData.append("Price:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productPrice != null ? productPrice.trim() : "Not Found");
+            formattedData.append("\n\n");*/
+
+            // About This Item
+            formattedData.append("******************************\n");
+            formattedData.append("About This Item:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(aboutThisItem != null ? cleanHTMLTags(aboutThisItem.trim()) : "Not Found");
+            formattedData.append("\n\n");
+
+            // Product Information (Table)
+            formattedData.append("******************************\n");
+            formattedData.append("Product Information:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productInformation != null ? productInformation.trim() : "Not Found");
+            formattedData.append("\n\n");
+
+            // Additional Information
+            formattedData.append("******************************\n");
+            formattedData.append("Additional Information:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(additionalInformation != null ? cleanHTMLTags(additionalInformation.trim()) : "Not Found");
+            formattedData.append("\n\n");
+
+            /*// Product Details Section
+            formattedData.append("******************************\n");
+            formattedData.append("Product Details:\n");
+            formattedData.append("******************************\n");
+            formattedData.append(productDetailsSection != null ? cleanHTMLTags(productDetailsSection.trim()) : "Not Found");
+            formattedData.append("\n\n");*/
+
+            return formattedData.toString();
         }
 
         private String extractData(String html, String regex) {
@@ -151,54 +211,6 @@ public class MainActivity2 extends AppCompatActivity {
             return null;
         }
 
-        private String formatProductData(String productName, String productPrice, String aboutThisItem, String productInformation, String additionalInformation, String productDetailsSection) {
-            StringBuilder formattedData = new StringBuilder();
-
-            // Product Name
-            formattedData.append("******************************\n");
-            formattedData.append("Product Name:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(productName != null ? productName.trim() : "Not Found");
-            formattedData.append("\n\n");
-
-            // Product Price
-            formattedData.append("******************************\n");
-            formattedData.append("Price:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(productPrice != null ? productPrice.trim() : "Not Found");
-            formattedData.append("\n\n");
-
-            // About This Item
-            formattedData.append("******************************\n");
-            formattedData.append("About This Item:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(aboutThisItem != null ? cleanHTMLTags(aboutThisItem.trim()) : "Not Found");
-            formattedData.append("\n\n");
-
-            // Product Information (Table)
-            formattedData.append("******************************\n");
-            formattedData.append("Product Information:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(productInformation != null ? productInformation.trim() : "Not Found");
-            formattedData.append("\n\n");
-
-            // Additional Information
-            formattedData.append("******************************\n");
-            formattedData.append("Additional Information:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(additionalInformation != null ? cleanHTMLTags(additionalInformation.trim()) : "Not Found");
-            formattedData.append("\n\n");
-
-            /*// Product Details Section
-            formattedData.append("******************************\n");
-            formattedData.append("Product Details:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(productDetailsSection != null ? cleanHTMLTags(productDetailsSection.trim()) : "Not Found");
-            formattedData.append("\n\n");*/
-
-            return formattedData.toString();
-        }
-
         private String extractAndFormatTableUsingJsoup(String htmlContent) {
             // Jsoup से HTML डॉक्यूमेंट बनाएं
             Document doc = Jsoup.parse(htmlContent);
@@ -229,34 +241,6 @@ public class MainActivity2 extends AppCompatActivity {
             return formattedText.toString().trim();
         }
 
-
-        private String formatProductDetailsSection(String productDetailsHtml) {
-            // HTML टैग्स साफ करें
-            String cleanedText = cleanHTMLTags(productDetailsHtml);
-
-            // डेटा को पैराग्राफ के आधार पर विभाजित करें (यहां हम "\n" के बाद हर पैराग्राफ को अलग करेंगे)
-            String[] details = cleanedText.split("\\r?\\n"); // नई लाइनों पर विभाजित
-
-            // फॉर्मेटेड टेक्स्ट तैयार करें
-            StringBuilder formattedText = new StringBuilder();
-            formattedText.append("******************************\n");
-            formattedText.append("Product Details:\n");
-            formattedText.append("******************************\n");
-
-            // हर पैराग्राफ के पहले डॉट जोड़ें
-            for (String detail : details) {
-                if (!detail.trim().isEmpty()) { // अगर पैराग्राफ खाली नहीं है
-                    formattedText.append("• ").append(detail.trim()).append("\n");
-                }
-            }
-
-            // फॉर्मेटेड टेक्स्ट को रिटर्न करें
-            return formattedText.toString().trim(); // अंत में सफाई करें
-        }
-
-
-
-
         private String cleanHTMLTags(String html) {
             // HTML टैग्स हटाने के लिए Regex और &lrm; को हटाने के लिए
             String cleanedHtml = html.replaceAll("<[^>]*>", ""); // हटाए HTML टैग्स
@@ -267,8 +251,5 @@ public class MainActivity2 extends AppCompatActivity {
             return cleanedHtml.trim(); // सफाई के बाद ट्रिम कर देना
         }
     }
-
-
-
 
 }
