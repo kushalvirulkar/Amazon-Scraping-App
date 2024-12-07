@@ -3,6 +3,7 @@ package com.amazonproductscraping.ui;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,10 +22,13 @@ import java.util.regex.Pattern;
 
 public class MainActivity2 extends AppCompatActivity {
 
-    private TextView productDetails;
     private static final String TAG = "MainActivity2";
-    private boolean isSuccessful = false; // ट्रैक करें कि डेटा सफलतापूर्वक रिट्रीव हुआ या नहीं
-    private String productName,  aboutThisItem, productInformation, additionalInformation;
+    private boolean isSuccessful = false;
+    private TextView name_Txt,price_Txt,discount_Txt,mrp_Txt,about_this_item_Txt,technical_details_Txt,additional_information_Txt,product_details_Txt,productSpecifications_Txt;
+    private String amazonUrl_STRng,productName_STRng,discount_STRng,productPrice_STRng,mrpPrice_STRng,formattedText_STRng,aboutThisItem_STRng
+            ,oprice_STRng,productInfoText_STRng,productInformation_STRng,additionalInformation_STRng;
+
+    private EditText productDetails;
 
 
     @Override
@@ -32,9 +36,19 @@ public class MainActivity2 extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
 
+        // Initialize TextViews
+        name_Txt = findViewById(R.id.name);
+        price_Txt = findViewById(R.id.price);
+        discount_Txt = findViewById(R.id.discount);
+        mrp_Txt = findViewById(R.id.mrp);
+        about_this_item_Txt = findViewById(R.id.about_this_item);
+        technical_details_Txt = findViewById(R.id.technical_details);
+        additional_information_Txt = findViewById(R.id.additional_information);
+        product_details_Txt = findViewById(R.id.product_details);
+        productSpecifications_Txt = findViewById(R.id.productSpecifications);
         productDetails = findViewById(R.id.productDetails);
 
-        String amazonUrl = "https://www.amazon.in/Carlton-London-Women-Limited-Parfum/dp/B09MTR2HRP"; // आपका प्रोडक्ट URL
+        String amazonUrl = "https://www.amazon.in/dp/B0CBTTCJL6"; // आपका प्रोडक्ट URL
         new FetchAmazonDataTask().execute(amazonUrl);
     }
 
@@ -76,26 +90,32 @@ public class MainActivity2 extends AppCompatActivity {
                         reader.close();
 
                         // Extract data using Jsoup and regular expressions
-                        productName = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");
-                        aboutThisItem = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");
-                        productInformation = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");
-                        additionalInformation = extractAndFormatTableUsingJsoup(htmlContent.toString());
+                        productName_STRng = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");
 
-                        aboutThisItem = aboutThisItem != null ? cleanHTMLTags(aboutThisItem) : "Not Found";
-                        additionalInformation = additionalInformation != null ? cleanHTMLTags(additionalInformation) : "Not Found";
-                        aboutThisItem = aboutThisItem != null ? formatAboutThisItem(aboutThisItem) : "Not Found";
+                        productPrice_STRng = extractData(htmlContent.toString(), "<span class=\"a-price-whole\">([\\d,]+)</span>");
+                        discount_STRng = extractData(htmlContent.toString(), "class=\"a-size-large a-color-price savingPriceOverride.*?\">(-?\\d+%)</span>");
+                        mrpPrice_STRng = extractData(htmlContent.toString(), "M\\.R\\.P\\.:.*?<span class=\"a-offscreen\">₹([\\d,]+)</span>");
+
+
+                        aboutThisItem_STRng = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");
+                        productInformation_STRng = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");
+                        additionalInformation_STRng = extractAndFormatTableUsingJsoup(htmlContent.toString());
+
+                        aboutThisItem_STRng = aboutThisItem_STRng != null ? cleanHTMLTags(aboutThisItem_STRng) : "Not Found";
+                        productInformation_STRng = productInformation_STRng != null ? cleanHTMLTags(productInformation_STRng) : "Not Found";
+                        aboutThisItem_STRng = aboutThisItem_STRng != null ? formatAboutThisItem(aboutThisItem_STRng) : "Not Found";
 
                         // Retry if "Not Found" is returned for additional information
-                        if (additionalInformation.equals("Not Found")) {
+                        if (additionalInformation_STRng.equals("Not Found")) {
                             retryCount++;
                             Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
                             continue; // Retry fetching data
                         }
 
                         // If all data is successfully retrieved
-                        if (productName != null || aboutThisItem != null || productInformation != null || additionalInformation != null) {
+                        if (productName_STRng != null || aboutThisItem_STRng != null || productInformation_STRng != null || additionalInformation_STRng != null) {
                             isSuccessful = true; // Successfully retrieved data
-                            result = formatProductData(productName, aboutThisItem, productInformation, additionalInformation);
+                            result = formatProductData(productName_STRng, aboutThisItem_STRng, productInformation_STRng, additionalInformation_STRng);
                             break; // Exit loop after success
                         }
                     }
@@ -112,7 +132,18 @@ public class MainActivity2 extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             if (isSuccessful) {
+                name_Txt.setText(productName_STRng);
+                price_Txt.setText(productPrice_STRng);
+                discount_Txt.setText(discount_STRng);
+                mrp_Txt.setText(mrpPrice_STRng);
+                about_this_item_Txt.setText(aboutThisItem_STRng);
+                technical_details_Txt.setText("Empty");
+                additional_information_Txt.setText(additionalInformation_STRng);
+                product_details_Txt.setText(productInfoText_STRng);
+
+                //product_details_Txt.setText("product_details_Txt");
                 productDetails.setText(result);
+
                 // Data retrieval successful
                 Toast.makeText(MainActivity2.this, "Image Load Successful...", Toast.LENGTH_SHORT).show();
             } else {
@@ -131,13 +162,6 @@ public class MainActivity2 extends AppCompatActivity {
             formattedData.append("******************************\n");
             formattedData.append(productName != null ? productName.trim() : "Not Found");
             formattedData.append("\n\n");
-
-            /*// Product Price
-            formattedData.append("******************************\n");
-            formattedData.append("Price:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(productPrice != null ? productPrice.trim() : "Not Found");
-            formattedData.append("\n\n");*/
 
             // About This Item
             formattedData.append("******************************\n");
@@ -160,21 +184,23 @@ public class MainActivity2 extends AppCompatActivity {
             formattedData.append(additionalInformation != null ? cleanHTMLTags(additionalInformation.trim()) : "Not Found");
             formattedData.append("\n\n");
 
-            /*// Product Details Section
-            formattedData.append("******************************\n");
-            formattedData.append("Product Details:\n");
-            formattedData.append("******************************\n");
-            formattedData.append(productDetailsSection != null ? cleanHTMLTags(productDetailsSection.trim()) : "Not Found");
-            formattedData.append("\n\n");*/
-
             return formattedData.toString();
         }
 
         private String extractData(String html, String regex) {
-            Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
-            Matcher matcher = pattern.matcher(html);
-            if (matcher.find()) {
-                return matcher.group(1);
+            try {
+                // Trim and process the data
+                productPrice_STRng = productPrice_STRng != null ? productPrice_STRng.replace(",","").trim() : "Price not found";
+                discount_STRng = discount_STRng != null ? discount_STRng.replace("-", "").replace("%", "").trim() : "Discount not found";
+                mrpPrice_STRng = mrpPrice_STRng != null ? mrpPrice_STRng.replace(",","").trim() : "MRP not found";
+
+                Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+                Matcher matcher = pattern.matcher(html);
+                if (matcher.find()) {
+                    return matcher.group(1);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             return null;
         }
