@@ -2,7 +2,9 @@ package com.amazonproductscraping.ui;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,9 +28,8 @@ public class MainActivity2 extends AppCompatActivity {
     private boolean isSuccessful = false;
     private TextView name_Txt,price_Txt,discount_Txt,mrp_Txt,about_this_item_Txt,product_information_Txt,technical_details_Txt,additional_information_Txt,product_details_Txt,productSpecifications_Txt;
     private String amazonUrl_STRng,productName_STRng,discount_STRng,productPrice_STRng,mrpPrice_STRng,formattedText_STRng,aboutThisItem_STRng
-            ,oprice_STRng,productInfoText_STRng,productInformation_STRng,additionalInformation_STRng;
+            ,oprice_STRng,product_details_STRng,productInformation_STRng,additionalInformation_STRng;
 
-    private EditText productDetails;
 
 
     @Override
@@ -47,7 +48,6 @@ public class MainActivity2 extends AppCompatActivity {
         additional_information_Txt = findViewById(R.id.additional_information);
         product_details_Txt = findViewById(R.id.product_details);
         productSpecifications_Txt = findViewById(R.id.productSpecifications);
-        productDetails = findViewById(R.id.productDetails);
 
         String amazonUrl = "https://www.amazon.in/Carlton-London-Women-Limited-Parfum/dp/B09MTR2HRP?th=1"; // आपका प्रोडक्ट URL
         new FetchAmazonDataTask().execute(amazonUrl);
@@ -56,7 +56,7 @@ public class MainActivity2 extends AppCompatActivity {
     private class FetchAmazonDataTask extends AsyncTask<String, Void, String> {
 
         private boolean isSuccessful = false; // Track if the data was successfully retrieved
-        private static final int MAX_RETRY_COUNT = 3; // Maximum retry count
+        private static final int MAX_RETRY_COUNT = 2; // Maximum retry count
 
         @Override
         protected String doInBackground(String... urls) {
@@ -91,20 +91,25 @@ public class MainActivity2 extends AppCompatActivity {
                         reader.close();
 
                         // Extract data using Jsoup and regular expressions
-                        productName_STRng = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");
+                        productName_STRng = extractData(htmlContent.toString(), "<span id=\"productTitle\".*?>(.*?)</span>");//ok
+                        productPrice_STRng = extractData(htmlContent.toString(), "<span class=\"a-price-whole\">([\\d,]+)</span>");//ok
+                        discount_STRng = extractData(htmlContent.toString(), "class=\"a-size-large a-color-price savingPriceOverride.*?\">(-?\\d+%)</span>");//ok
+                        mrpPrice_STRng = extractData(htmlContent.toString(), "M\\.R\\.P\\.:.*?<span class=\"a-offscreen\">₹([\\d,]+)</span>");//ok
+                        aboutThisItem_STRng = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");//1 se 2 niche;
+                        aboutThisItem_STRng = aboutThisItem_STRng != null ? formatAboutThisItem(aboutThisItem_STRng) : "Not Found";//2;
+                        productInformation_STRng = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");//1 se 2 niche;
+                        productInformation_STRng = productInformation_STRng != null ? cleanHTMLTags(productInformation_STRng) : "Not Found";//2;
+                        additionalInformation_STRng = extractAndFormatTableUsingJsoup(htmlContent.toString());//ok
 
-                        productPrice_STRng = extractData(htmlContent.toString(), "<span class=\"a-price-whole\">([\\d,]+)</span>");
-                        discount_STRng = extractData(htmlContent.toString(), "class=\"a-size-large a-color-price savingPriceOverride.*?\">(-?\\d+%)</span>");
-                        mrpPrice_STRng = extractData(htmlContent.toString(), "M\\.R\\.P\\.:.*?<span class=\"a-offscreen\">₹([\\d,]+)</span>");
+
+                        product_details_STRng = extractData(htmlContent.toString(), "<ul class=\"a-unordered-list a-nostyle a-vertical a-spacing-none detail-bullet-list\">(.*?)</ul>");//1 to 5
+                        product_details_STRng = formatProductDetailsPlainText(product_details_STRng);//2
+                        product_details_STRng = product_details_STRng != null ? product_details_STRng.replace("&lrm;","").trim() : "Name not found";//3
+                        product_details_STRng = product_details_STRng != null ? product_details_STRng.replace("&rlm;","").trim() : "Name not found";//4
+                        product_details_STRng = product_details_STRng.replaceAll("\\s{2,}", " ");//5
 
 
-                        aboutThisItem_STRng = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");
-                        productInformation_STRng = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");
-                        additionalInformation_STRng = extractAndFormatTableUsingJsoup(htmlContent.toString());
 
-                        //aboutThisItem_STRng = aboutThisItem_STRng != null ? cleanHTMLTags(aboutThisItem_STRng) : "Not Found";
-                        productInformation_STRng = productInformation_STRng != null ? cleanHTMLTags(productInformation_STRng) : "Not Found";
-                        aboutThisItem_STRng = aboutThisItem_STRng != null ? formatAboutThisItem(aboutThisItem_STRng) : "Not Found";
 
                         // Retry if "Not Found" is returned for additional information
                         if (additionalInformation_STRng.equals("Not Found")) {
@@ -114,9 +119,9 @@ public class MainActivity2 extends AppCompatActivity {
                         }
 
                         // If all data is successfully retrieved
-                        if (productName_STRng != null || aboutThisItem_STRng != null || productInformation_STRng != null || additionalInformation_STRng != null) {
+                        if (productName_STRng != null || aboutThisItem_STRng != null || productInformation_STRng != null || product_details_STRng != null) {
                             isSuccessful = true; // Successfully retrieved data
-                            result = formatProductData(productName_STRng, aboutThisItem_STRng, productInformation_STRng, additionalInformation_STRng);
+                            result = formatProductData(productName_STRng, aboutThisItem_STRng, productInformation_STRng, product_details_STRng);
                             break; // Exit loop after success
                         }
                     }
@@ -133,25 +138,62 @@ public class MainActivity2 extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             if (isSuccessful) {
-                if (aboutThisItem_STRng == about_this_item_Txt.getText().toString() || productInformation_STRng == product_information_Txt.getText().toString() ||
-                        additionalInformation_STRng == additional_information_Txt.getText().toString() || productInfoText_STRng == product_details_Txt.getText().toString()){
-
-
-
+                // Check and set visibility for 'aboutThisItem_STRng' and 'about_this_item_Txt'
+                if (aboutThisItem_STRng == null || aboutThisItem_STRng.trim().isEmpty()) {
+                    about_this_item_Txt.setVisibility(View.GONE); // Make TextView gone
+                } else {
+                    about_this_item_Txt.setVisibility(View.VISIBLE); // If not null, make it visible
+                    about_this_item_Txt.setText(aboutThisItem_STRng); // Set text if needed
+                    //about_this_item_Txt.setText(Html.fromHtml(aboutThisItem_STRng, Html.FROM_HTML_MODE_COMPACT));
                 }
+
+                // Check and set visibility for 'productInformation_STRng' and 'product_information_Txt'
+                if (productInformation_STRng == null || productInformation_STRng.trim().isEmpty()) {
+                    product_information_Txt.setVisibility(View.GONE);
+                } else {
+                    product_information_Txt.setVisibility(View.VISIBLE);
+                    product_information_Txt.setText(productInformation_STRng);
+                    //product_information_Txt.setText(Html.fromHtml(productInformation_STRng, Html.FROM_HTML_MODE_COMPACT));
+                }
+
+                // Check and set visibility for 'additionalInformation_STRng' and 'additional_information_Txt'
+                if (additionalInformation_STRng == null || additionalInformation_STRng.trim().isEmpty()) {
+                    additional_information_Txt.setVisibility(View.GONE);
+                } else {
+                    additional_information_Txt.setVisibility(View.VISIBLE);
+                    additional_information_Txt.setText(additionalInformation_STRng);
+                    //additional_information_Txt.setText(Html.fromHtml(additionalInformation_STRng, Html.FROM_HTML_MODE_COMPACT));
+                }
+
+                // Check and set visibility for 'product_details_STRng' and 'product_details_Txt'
+                if (product_details_STRng == null || product_details_STRng.trim().isEmpty()) {
+                    product_details_Txt.setVisibility(View.GONE);
+                } else {
+                    product_details_Txt.setVisibility(View.VISIBLE);
+                    product_details_Txt.setText(product_details_STRng);
+                    //product_details_Txt.setText(Html.fromHtml(result, Html.FROM_HTML_MODE_COMPACT));
+                }
+
+                if (product_details_STRng == null || product_details_STRng.trim().isEmpty()) {
+                    //product_details_Txt.setVisibility(View.GONE);
+                } else {
+                    //product_details_Txt.setVisibility(View.VISIBLE);
+                    //product_details_Txt.setText(product_details_STRng);
+                }
+
                 name_Txt.setText(productName_STRng);
                 price_Txt.setText(productPrice_STRng);
                 discount_Txt.setText(discount_STRng);
                 mrp_Txt.setText(mrpPrice_STRng);
-                about_this_item_Txt.setText(aboutThisItem_STRng);
-                product_information_Txt.setText(productInformation_STRng);
-                additional_information_Txt.setText(additionalInformation_STRng);
+                //about_this_item_Txt.setText(aboutThisItem_STRng);
+                //product_information_Txt.setText(productInformation_STRng);
+                //additional_information_Txt.setText(additionalInformation_STRng);
 
-                technical_details_Txt.setText("Empty");
-                product_details_Txt.setText(productInfoText_STRng);
+                //technical_details_Txt.setText("Empty");
+                //product_details_Txt.setText(product_details_STRng);
 
                 //product_details_Txt.setText("product_details_Txt");
-                productDetails.setText(result);
+                //productDetails.setText(result);
 
                 // Data retrieval successful
                 Toast.makeText(MainActivity2.this, "Image Load Successful...", Toast.LENGTH_SHORT).show();
@@ -161,9 +203,38 @@ public class MainActivity2 extends AppCompatActivity {
             }
         }
 
-        private String formatProductData(String productName, String aboutThisItem, String productInformation, String additionalInformation) {
+        private String formatProductData(String productName, String aboutThisItem, String productInformation, String productdetails) {
 
             StringBuilder formattedData = new StringBuilder();
+
+
+            if (productdetails == null || productdetails.isEmpty()) {
+                return "No Product Details Found";
+            }
+
+            // Regex for matching key-value pairs
+            Pattern liPattern = Pattern.compile("<li.*?>\\s*<span.*?>\\s*<span class=\"a-text-bold\">(.*?)&rlm;.*?</span>\\s*<span>(.*?)</span>\\s*</span>\\s*</li>", Pattern.DOTALL);
+            Matcher liMatcher = liPattern.matcher(productdetails);
+
+            // Build the formatted HTML
+            StringBuilder formattedDetails = new StringBuilder();
+            formattedDetails.append("<h2 style='text-align:center;'>Product Details</h2>");
+            formattedDetails.append("<ul style='list-style:none; padding:0;'>");
+
+            while (liMatcher.find()) {
+                String key = liMatcher.group(1).trim();
+                String value = liMatcher.group(2).trim();
+
+                // Add fat dot and key-value pair
+                formattedDetails.append("<li style='margin-bottom:8px;'>")
+                        .append("&#8226; <b>").append(key).append("</b>: ").append(value)
+                        .append("</li>");
+            }
+
+            formattedDetails.append("</ul>");
+
+
+
 
             // Product Name
             /*formattedData.append("******************************\n");
@@ -195,7 +266,7 @@ public class MainActivity2 extends AppCompatActivity {
             formattedData.append(additionalInformation != null ? cleanHTMLTags(additionalInformation.trim()) : "Not Found");
             formattedData.append("\n\n");*/
 
-            return formattedData.toString();
+            return formattedDetails.toString().trim();
         }
 
         private String extractData(String html, String regex) {
@@ -216,6 +287,35 @@ public class MainActivity2 extends AppCompatActivity {
             }
             return null;
         }
+
+        private String formatProductDetailsPlainText(String productdetails) {
+            // Check if product details are empty
+            if (productdetails == null || productdetails.isEmpty()) {
+                return "No Product Details Found";
+            }
+
+            // Regex to match <li> elements for key-value pairs
+            Pattern liPattern = Pattern.compile("<li.*?>\\s*<span.*?>\\s*<span class=\"a-text-bold\">(.*?)</span>\\s*<span>(.*?)</span>\\s*</span>\\s*</li>", Pattern.DOTALL);
+            Matcher liMatcher = liPattern.matcher(productdetails);
+
+            // Build the formatted output
+            StringBuilder formattedDetails = new StringBuilder();
+            formattedDetails.append("-----------Product Details-----------\n");
+
+            // Loop through each matched <li> and create bullet points
+            while (liMatcher.find()) {
+                String key = liMatcher.group(1).trim();
+                String value = liMatcher.group(2).trim();
+
+                // Add bullet point and key-value pair
+                formattedDetails.append("• ").append(key).append(": ").append(value).append("\n");
+            }
+
+            formattedDetails.append("-------------------------------------\n");
+            return formattedDetails.toString().trim();
+        }
+
+
 
         private String extractAndFormatTable(String html, String regex) {
             Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
@@ -268,15 +368,32 @@ public class MainActivity2 extends AppCompatActivity {
             String[] paragraphs = cleanedText.split("(?<=\\.|\\|)"); // '.' या '|' पर विभाजन
 
             StringBuilder formattedText = new StringBuilder();
-            formattedText.append("******************************\n");
-            formattedText.append("About This Item:\n");
-            formattedText.append("******************************\n");
+
+            // Define total width for alignment
+            int totalWidth = 50; // Customize this width as needed
+            String header = "------------- About This Item -------------";
+
+            // Calculate padding for center alignment
+            int padding = (totalWidth - header.length()) / 2;
+
+            // Add spaces for center alignment and append the header
+            formattedText.append(" ".repeat(Math.max(0, padding))); // Add spaces
+            formattedText.append(header).append("\n");
+
             for (String paragraph : paragraphs) {
                 if (!paragraph.trim().isEmpty()) {
                     formattedText.append("• ").append(paragraph.trim()).append("\n\n");
                 }
             }
+
+            // Add footer
+            String footer = "-------------------------------------";
+            padding = (totalWidth - footer.length()) / 2; // Recalculate padding for footer
+            formattedText.append(" ".repeat(Math.max(0, padding))); // Add spaces for footer alignment
+            formattedText.append(footer).append("\n");
+
             return formattedText.toString().trim();
+
         }
 
         private String cleanHTMLTags(String html) {
