@@ -15,24 +15,27 @@
         android:theme="@style/Theme.AndroidAmazonScraping"
         tools:targetApi="31">
         <activity
-            android:name=".Last_Update"
+            android:name=".ImageScraping"
             android:exported="true" >
-
-        </activity>
-        <activity
-            android:name=".Price_Scraping"
-            android:exported="true"
-            android:theme="@style/Theme.AndroidAmazonScraping">
-
-        </activity>
-        <activity
-            android:name=".MainActivity2"
-            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".Last_Update"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".Price_Scraping"
+            android:exported="true"
+            android:theme="@style/Theme.AndroidAmazonScraping">
+        </activity>
+        <activity
+            android:name=".MainActivity2"
+            android:exported="true">
+
         </activity>
 
         <profileable
