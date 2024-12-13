@@ -14,49 +14,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidAmazonScraping"
         tools:targetApi="31">
-        <activity
-            android:name=".Webview_ScrapTest"
-            android:exported="true" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".Webview_Scrap"
-            android:exported="true">
-
-        </activity>
-        <activity
-            android:name=".Activity_Jsoup"
-            android:exported="true">
-        </activity>
-        <activity
-            android:name=".ImageScraping"
-            android:exported="true">
-        </activity>
-        <activity
-            android:name=".Last_Update"
-            android:exported="true">
-        </activity>
-        <activity
-            android:name=".Price_Scraping"
-            android:exported="true"
-            android:theme="@style/Theme.AndroidAmazonScraping">
-        </activity>
-        <activity
-            android:name=".MainActivity2"
-            android:exported="true">
-        </activity>
-
         <profileable
             android:shell="true"
             tools:targetApi="29" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
     </application>
 

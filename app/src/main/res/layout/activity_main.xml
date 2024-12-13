@@ -1,157 +1,172 @@
-<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
     android:background="@color/white"
-    tools:context=".ImageScraping">
+    tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/main"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="16dp">
+        android:layout_height="match_parent">
 
-        <!-- TextView to display product name -->
-
-        <EditText
-            android:id="@+id/edittext"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:padding="8dp"
-            android:inputType="textUri"
-            android:textColor="@color/black"
-            android:hint="Enter URL will appear here"
-            android:textColorHint="@color/black" />
-
-
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/start"
-            android:text="Get Data">
-        </Button>
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <!-- WebView for loading Amazon page -->
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="200dp"
+            android:layout_height="150dp"
             android:visibility="gone"
-            android:id="@+id/show"
-            android:text="Show">
-        </Button>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
 
-
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:padding="8dp"/>
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <EditText
+                    android:id="@+id/edittext"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:padding="8dp"
+                    android:inputType="textUri"
+                    android:textColor="@color/black"
+                    android:hint="Enter URL will appear here"
+                    android:textColorHint="@color/black" >
+                </EditText>
 
 
-        <TextView
-            android:id="@+id/name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Product Name"
-            android:textSize="16sp"
-            android:padding="8dp"
-            android:textColor="#000000"/>
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/start"
+                    android:text="Get Data">
+                </Button>
 
-        <!-- TextView to display product price -->
-        <TextView
-            android:id="@+id/price"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Product Price"
-            android:textSize="16sp"
-            android:padding="8dp"
-            android:textColor="#000000"/>
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:id="@+id/show"
+                    android:text="Show">
+                </Button>
 
-        <!-- TextView to display product discount -->
-        <TextView
-            android:id="@+id/discount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Product discount"
-            android:textSize="16sp"
-            android:padding="8dp"
-            android:textColor="#000000"/>
+            </LinearLayout>
 
-        <!-- TextView to display product description -->
-        <TextView
-            android:id="@+id/mrp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="MRP"
-            android:textSize="14sp"
-            android:padding="8dp"
-            android:textColor="#000000"/>
 
-        <!-- TextView to display "About this item" -->
-        <TextView
-            android:id="@+id/about_this_item"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="About this item"
-            android:padding="10dp"
-            android:textSize="14sp"
-            android:textColor="#000000"/>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:padding="8dp">
+            </androidx.recyclerview.widget.RecyclerView>
 
-        <!-- TextView to display "Product Information" -->
-        <TextView
-            android:id="@+id/product_information"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Product information"
-            android:padding="10dp"
-            android:textSize="14sp"
-            android:textColor="#000000"/>
 
-        <TextView
-            android:id="@+id/additional_information"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Additional Information"
-            android:padding="10dp"
-            android:textSize="14sp"
-            android:textColor="#000000"/>
+            <!-- TextView to display the scraped product title -->
+            <TextView
+                android:id="@+id/productTitleTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Product Title"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
 
-        <TextView
-            android:id="@+id/technical_details"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Technical Details"
-            android:padding="10dp"
-            android:textSize="14sp"
-            android:textColor="#000000"/>
+            <!-- TextView to display the scraped product price -->
+            <TextView
+                android:id="@+id/productPriceTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Product Price"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
 
-        <TextView
-            android:id="@+id/product_details"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Product details"
-            android:padding="10dp"
-            android:textSize="14sp"
-            android:textColor="#000000"/>
+            <!-- TextView to display the scraped savings percentage -->
+            <TextView
+                android:id="@+id/savingsPercentageTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Savings Percentage"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
 
-        <TextView
-            android:id="@+id/productSpecifications"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Product Specifications"
-            android:padding="10dp"
-            android:textSize="14sp"
-            android:textColor="#000000"/>
+            <!-- TextView to display the scraped MRP price -->
+            <TextView
+                android:id="@+id/mrpPriceTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="MRP Price"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
 
-    </LinearLayout>
+            <!-- TextView to display the scraped product details -->
+            <TextView
+                android:id="@+id/productDetailsTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Product Details"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <!-- TextView to display the scraped "About this item" -->
+            <TextView
+                android:id="@+id/aboutThisItemTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="About This Item"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <!-- TextView to display the scraped additional information -->
+            <TextView
+                android:id="@+id/additionalInfoTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Additional Information"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <!-- TextView to display the scraped product information (ASIN, Reviews, Brand) -->
+            <TextView
+                android:id="@+id/productInfoTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Product Information"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/importantInformationTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Important Information"
+                android:textSize="16sp"
+                android:layout_below="@id/productInfoTextView"
+                android:padding="16dp"
+                android:textColor="@color/black" />
+
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 </ScrollView>
