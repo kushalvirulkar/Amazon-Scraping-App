@@ -1,17 +1,22 @@
 package com.amazonproductscraping.ui;
 
-import android.graphics.Color;
+import static android.webkit.URLUtil.isValidUrl;
+
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.amazonproductscraping.ui.Adapter.ImageAdapter;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -23,22 +28,31 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
-
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
-    private EditText productDetails;
-    private TextView name_Txt,price_Txt,discount_Txt,mrp_Txt,about_this_item_Txt,product_information_Txt,technical_details_Txt,additional_information_Txt,product_details_Txt,productSpecifications_Txt;
-    private String amazonUrl_STRng,productName_STRng,discount_STRng,productPrice_STRng,mrpPrice_STRng,formattedText_STRng,aboutThisItem_STRng
-            ,oprice_STRng,productInformation_STRng,additionalInformation_STRng,technical_details_STRng,product_details_STRng,productSpecifications_STRng;
+    private static final String TAG = "ImageScraping";
 
+    private RecyclerView recyclerView;
+    private ImageAdapter imageAdapter;
+    private List<String> imageUrls = new ArrayList<>();
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private EditText editText;
+    private Button startButton,show;
+    private TextView name_Txt,price_Txt,discount_Txt,mrp_Txt,about_this_item_Txt,product_information_Txt,technical_details_Txt,additional_information_Txt,product_details_Txt,productSpecifications_Txt;
+    private String amazonUrl_STRng,productName_STRng,discount_STRng,productPrice_STRng,mrpPrice_STRng,aboutThisItem_STRng
+            ,productInformation_STRng,additionalInformation_STRng,technical_details_STRng,product_details_STRng,productSpecifications_STRng;
     private boolean isSuccessful = false;
     //private String productName,  aboutThisItem, productInformation, additionalInformation;
     private Document doc;
+    // Database Helper
+    //private DatabaseHelper dbHelper = new DatabaseHelper(this);
 
     private double calculateOriginalPrice(double discountedPrice, double discountPercentage) {
         // Formula to calculate original price
@@ -48,8 +62,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_image_scraping);
 
+        // Initialize RecyclerView
+        startButton = findViewById(R.id.start);
+        show = findViewById(R.id.show);
+        editText = findViewById(R.id.edittext);
+        recyclerView = findViewById(R.id.recyclerView);
         // Initialize TextViews
         name_Txt = findViewById(R.id.name);
         price_Txt = findViewById(R.id.price);
@@ -62,17 +81,129 @@ public class MainActivity extends AppCompatActivity {
         product_details_Txt = findViewById(R.id.product_details);
         productSpecifications_Txt = findViewById(R.id.productSpecifications);
 
-        amazonUrl_STRng = "https://www.amazon.in/ZENEME-Rhodium-Plated-Silver-Toned-Zirconia-Jewellery/dp/B0BQJL99KR"; // Product URL
 
 
 
+
+        amazonUrl_STRng = editText.getText().toString(); // Product URL
+
+
+        startButton.setOnClickListener(v -> {
+            String enteredUrl = editText.getText().toString().trim();
+
+            editText.setVisibility(View.GONE);
+            startButton.setVisibility(View.GONE);
+            show.setVisibility(View.VISIBLE);
+
+            if (isValidUrl(enteredUrl)) {
+                amazonUrl_STRng = enteredUrl;
+                scrapeImages(amazonUrl_STRng); // Start scraping
+                startWebScrapingJSoup(amazonUrl_STRng); // Start product data scraping
+                //startWebScrapingHTML(amazonUrl_STRng); // Start product data scraping
+
+            } else {
+                Toast.makeText(MainActivity.this, "Please enter a valid URL starting with http:// or https://", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        show.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startButton.setVisibility(View.VISIBLE);
+                show.setVisibility(View.GONE);
+                editText.setVisibility(View.VISIBLE);
+            }
+        });
+
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(layoutManager);
+
+    }
+
+
+    //Image Scraping
+    private void scrapeImages(String urlString) {
+
+        executorService.execute(() -> {
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
+            List<String> imageUrls = new ArrayList<>();
+
+            try {
+
+                if (urlString.equals(urlString)){
+                    URL url = new URL(urlString);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                    connection.connect();
+
+                    // Read the response
+                    reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    StringBuilder html = new StringBuilder();
+                    String line;
+
+                    while ((line = reader.readLine()) != null) {
+                        html.append(line);
+                    }
+
+                    String htmlContent = html.toString();
+
+                    // Regex to extract hiRes image URLs
+                    Pattern pattern = Pattern.compile("\"hiRes\":\"(https:\\/\\/m\\.media-amazon\\.com\\/images\\/I\\/[^\" ]+)\"");
+                    Matcher matcher = pattern.matcher(htmlContent);
+
+                    while (matcher.find()) {
+                        String imageUrl = matcher.group(1).replace("\\/", "/"); // Fix escaped slashes
+                        if (!imageUrls.contains(imageUrl)) {
+                            imageUrls.add(imageUrl);
+                        }
+                    }
+                }
+
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error scraping images", e);
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+
+            // Update the UI on the main thread
+            runOnUiThread(() -> {
+                if (imageUrls.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "No images found!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.d(TAG, "Loaded Images: " + imageUrls.size());
+                    imageAdapter = new ImageAdapter(imageUrls);
+                    recyclerView.setAdapter(imageAdapter);
+
+                    Log.i(TAG, "Images_Loads : "+imageUrls);
+
+                    //textView.setText(imageUrls.toString());
+                }
+            });
+        });
+    }
+
+
+    private void startWebScrapingJSoup(String amazonUrlStRng) {
         // Web Scraping to fetch product data
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     // Connect to Amazon product page
-                    doc = Jsoup.connect(amazonUrl_STRng)
+                    doc = Jsoup.connect(amazonUrlStRng)
                             //.userAgent("Chrome/117.0.5938.92 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
                             .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.92 Safari/537.36")
                             .referrer("https://www.google.com")
@@ -146,32 +277,49 @@ public class MainActivity extends AppCompatActivity {
                     // "About this item" ke liye section select karein, ye jewellery ke liye hai.
                     Element aboutThisItemElement = doc.select("div.a-expander-content.a-expander-partial-collapse-content").first();
 
-                    if (aboutThisItemElement != null) {
+                    if (aboutThisItemElement != null && !aboutThisItemElement.text().isEmpty()) {
                         // Sabhi list items extract karein
                         Elements listItems = aboutThisItemElement.select("ul.a-unordered-list li");
 
-                        // Extracted text ko format karein
-                        final StringBuilder aboutThisItemText = new StringBuilder();
+                        // Check if listItems has data
+                        if (listItems.size() > 0) {
+                            // Extracted text ko format karein
+                            final StringBuilder aboutThisItemText = new StringBuilder();
 
-                        // Title "About this item" add karein aur ek line chhodhein
-                        //aboutThisItemText.append("About this item\n\n");
+                            // Har item ke aage bullet point add karein
+                            for (Element item : listItems) {
+                                aboutThisItemText.append("• ").append(item.text()).append("\n");
+                            }
 
-                        // Har item ke aage bullet point add karein
-                        for (Element item : listItems) {
-                            aboutThisItemText.append("• ").append(item.text()).append("\n");
-
+                            // Save formatted data
                             aboutThisItem_STRng = aboutThisItemText.toString();
 
-                            //Log.i(TAG, "aboooo : "+ aboutThisItemText);
+                            // Update UI on main thread
+                            runOnUiThread(() -> about_this_item_Txt.setText(aboutThisItem_STRng));
+
+                        } else {
+                            // Debugging to check why listItems is empty
+                            Log.d("DEBUG", "listItems is empty. Executing AsyncTask...");
+
+                            // Execute fallback AsyncTask
+                            new AboutThisItem().execute(amazonUrlStRng);
                         }
+                    } else {
+                        // Debugging to check why aboutThisItemElement is null or empty
+                        Log.d("DEBUG", "aboutThisItemElement is null or empty. Executing AsyncTask...");
+
+                        // Execute fallback AsyncTask
+                        new AboutThisItem().execute(amazonUrlStRng);
                     }
+
+
                     //2========================================================================================== ok
 
 
 
                     //3 Additional Information==========================================================================================
                     // "Additional Information" section extract karein
-                    Elements additionalInfoElements = doc.select("div#qpeTitleTag_feature_div");
+                    /*Elements additionalInfoElements = doc.select("div#qpeTitleTag_feature_div");
                     if (!additionalInfoElements.isEmpty()) {
                         final StringBuilder additionalInfoText = new StringBuilder();
 
@@ -189,17 +337,27 @@ public class MainActivity extends AppCompatActivity {
                             additionalInformation_STRng = additionalInfoText.toString();
 
                         }
-                    }
+                    }else {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "Additional Information Empty One", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }*/
                     //3 Additional Information==========================================================================================
 
 
                     // Extract "Additional Information" section ye jewellery  ke liye hai.
                     //3 Additional Information========================================================================================== ok
                     Elements additionalInfoElementss = doc.select("div.a-fixed-left-grid.product-facts-detail");
-                    if (!additionalInfoElementss.isEmpty()) {
+
+                    if (additionalInfoElementss != null && !additionalInfoElementss.text().isEmpty()) {
+
                         final StringBuilder additionalInfoText = new StringBuilder();
                         Log.d(TAG, "Additional Information section found.");
 
+                        // Iterate through each grid
                         for (Element grid : additionalInfoElementss) {
                             // Extract the key (left column text)
                             String key = grid.select("div.a-fixed-left-grid-col.a-col-left span.a-color-base").text();
@@ -210,11 +368,40 @@ public class MainActivity extends AppCompatActivity {
                             if (!key.isEmpty() && !value.isEmpty()) {
                                 additionalInfoText.append(key).append(": ").append(value).append("\n");
                                 Log.d(TAG, "Key: " + key + ", Value: " + value); // Debug log
-
-                                additionalInformation_STRng = additionalInfoText.toString();
                             }
                         }
+
+                        // Check if additionalInfoText contains meaningful data
+                        if (additionalInfoText.length() > 0) {
+                            // Save the formatted data
+                            additionalInformation_STRng = additionalInfoText.toString();
+
+                            // Update UI on main thread
+                            runOnUiThread(() -> additional_information_Txt.setText(additionalInformation_STRng));
+                        } else {
+                            // Debugging to check why data is empty
+                            Log.d("DEBUG", "additionalInfoText is empty. Triggering fallback...");
+
+                            // Execute fallback mechanism
+                            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Additional Information Empty One", Toast.LENGTH_SHORT).show());
+
+                            new AdditionalInformation().execute(amazonUrlStRng);
+                            new AddMore().execute(amazonUrlStRng);
+                        }
+                    } else {
+                        // Debugging to check why no elements are found
+                        Log.d("DEBUG", "additionalInfoElementss is empty. Triggering fallback...");
+
+                        // Execute fallback mechanism
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "Additional Information Empty Tow", Toast.LENGTH_SHORT).show());
+
+                        new AdditionalInformation().execute(amazonUrlStRng);
+                        new AddMore().execute(amazonUrlStRng);
+                        //startWebScrapingHTML(amazonUrl_STRng);
                     }
+
+
+
                     //3 Additional Information========================================================================================== ok
 
 
@@ -222,7 +409,7 @@ public class MainActivity extends AppCompatActivity {
                     // Extract "Product Specifications" section ye jewellery  ke liye hai.
                     Elements productSpecificationsElements = doc.select("div.a-row");  // We will extract data inside div.a-row
 
-                    if (!productSpecificationsElements.isEmpty()) {
+                    if (productSpecificationsElements != null && !productSpecificationsElements.text().isEmpty()) {
                         final StringBuilder productSpecificationsText = new StringBuilder();
                         Log.d(TAG, "Product specifications section found.");
 
@@ -255,12 +442,12 @@ public class MainActivity extends AppCompatActivity {
                                 productSpecifications_STRng = productSpecificationsText.toString();
                             }
                         }
+                    }else {
+
+
                     }
 
                     //4 Product specifications===========================================================================================
-
-
-
 
 
                     //Product details
@@ -268,23 +455,37 @@ public class MainActivity extends AppCompatActivity {
                     Elements listItems = doc.select("ul.a-unordered-list.a-nostyle.a-vertical.a-spacing-none.detail-bullet-list li");
 
                     final StringBuilder extractedText = new StringBuilder();
-                    for (Element item : listItems) {
-                        // Extract visible text and remove unwanted HTML tags
-                        String itemText = Jsoup.parse(item.html()).text().trim();
 
-                        // Check if the item contains a title and description (i.e., a colon)
-                        if (itemText.contains(":")) {
-                            String[] parts = itemText.split(":");
-                            String title = parts[0].trim();
-                            String description = parts.length > 1 ? parts[1].trim() : "";
+                    if (!listItems.isEmpty()) {
 
-                            extractedText.append("• ").append(title).append(": ").append(description).append("\n");
-                        } else {
-                            extractedText.append("• ").append(itemText).append("\n\n");
+                        for (Element item : listItems) {
+                            // Extract visible text and remove unwanted HTML tags
+                            String itemText = Jsoup.parse(item.html()).text().trim();
+
+                            // Check if the item contains a title and description (i.e., a colon)
+                            if (itemText.contains(":")) {
+                                String[] parts = itemText.split(":");
+                                String title = parts[0].trim();
+                                String description = parts.length > 1 ? parts[1].trim() : "";
+
+                                extractedText.append("• ").append(title).append(": ").append(description).append("\n");
+                            } else {
+                                extractedText.append("• ").append(itemText).append("\n\n");
+                            }
+
+                            product_details_STRng = extractedText.toString();
                         }
 
-                        product_details_STRng = extractedText.toString();
+                    }else {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "Product details Empty", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
                     }
+
 
                     //===========================================================================================
 
@@ -296,11 +497,10 @@ public class MainActivity extends AppCompatActivity {
                             price_Txt.setText(productPrice_STRng);
                             discount_Txt.setText(discount_STRng);
                             mrp_Txt.setText(mrpPrice_STRng);
-                            about_this_item_Txt.setText(aboutThisItem_STRng);
+                            //about_this_item_Txt.setText(aboutThisItem_STRng);
                             additional_information_Txt.setText(additionalInformation_STRng);
                             product_details_Txt.setText(product_details_STRng);
                             productSpecifications_Txt.setText(productSpecifications_STRng);
-
                         }
                     });
                 } catch (IOException e) {
@@ -312,7 +512,7 @@ public class MainActivity extends AppCompatActivity {
                             price_Txt.setText("");
                             discount_Txt.setText("");
                             mrp_Txt.setText("");
-                            about_this_item_Txt.setText("");
+                            //about_this_item_Txt.setText("");
                             additional_information_Txt.setText("");
                             product_details_Txt.setText("");
                             productSpecifications_Txt.setText("");
@@ -321,7 +521,488 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).start();
+    }
 
+
+    private class AboutThisItem extends AsyncTask<String, Void, String> {
+
+        private boolean isSuccessful = false; // Track if the data was successfully retrieved
+        private static final int MAX_RETRY_COUNT = 3; // Maximum retry count
+
+        @Override
+        protected String doInBackground(String... urls) {
+            String url = urls[0];
+            int retryCount = 0;
+            String result = "Not Found";
+
+            while (retryCount < MAX_RETRY_COUNT) {
+                try {
+                    // HTTP connection setup
+                    URL urlObj = new URL(url);
+                    HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                    connection.setRequestProperty("Referrer", "https://www.amazon.in");
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(15000);
+                    connection.setUseCaches(false);
+
+                    // Check HTTP response code
+                    int responseCode = connection.getResponseCode();
+                    Log.d("HTTP Response Code", String.valueOf(responseCode));
+
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        // Read HTML content
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                        StringBuilder htmlContent = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            htmlContent.append(line);
+                        }
+                        reader.close();
+
+                        aboutThisItem_STRng = extractData(htmlContent.toString(), "<div id=\"feature-bullets\".*?>(.*?)</div>");//1 se 2 niche;
+                        aboutThisItem_STRng = aboutThisItem_STRng != null ? formatAboutThisItem(aboutThisItem_STRng) : "Not Found";//2;
+
+                        if (aboutThisItem_STRng.equals("Not Found")){
+                            retryCount++;
+                            Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
+                            continue; // Retry fetching data
+                        }
+
+                        if (aboutThisItem_STRng != null){
+                            isSuccessful = true; // Successfully retrieved data
+                            break; // Exit loop after success
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.i(TAG, "Error fetching data: " + e.getMessage());
+                    retryCount++; // Increment retry count on error
+                    Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (isSuccessful) {
+                // Check and set visibility for 'aboutThisItem_STRng' and 'about_this_item_Txt'
+                if (aboutThisItem_STRng == null || aboutThisItem_STRng.trim().isEmpty()) {
+                    about_this_item_Txt.setVisibility(View.GONE); // Make TextView gone
+                } else {
+                    about_this_item_Txt.setVisibility(View.VISIBLE); // If not null, make it visible
+                    about_this_item_Txt.setText(aboutThisItem_STRng); // Set text if needed
+                }
+
+                Toast.makeText(MainActivity.this, "Image Load Successful...", Toast.LENGTH_SHORT).show();
+            } else {
+                // All attempts failed
+                Toast.makeText(MainActivity.this, "Failed to retrieve data after multiple attempts.", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        private String extractData(String html, String regex) {
+            try {
+                // Trim and process the data
+                productName_STRng = productName_STRng != null ? productName_STRng.replace("","").trim() : "Name not found";
+                productPrice_STRng = productPrice_STRng != null ? productPrice_STRng.replace(",","").trim() : "Price not found";
+                discount_STRng = discount_STRng != null ? discount_STRng.replace("-", "").replace("%", "").trim() : "Discount not found";
+                mrpPrice_STRng = mrpPrice_STRng != null ? mrpPrice_STRng.replace(",","").trim() : "MRP not found";
+
+                Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+                Matcher matcher = pattern.matcher(html);
+                if (matcher.find()) {
+                    return matcher.group(1);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        private String formatAboutThisItem(String aboutText) {
+            String cleanedText = cleanHTMLTags(aboutText);
+            String[] paragraphs = cleanedText.split("(?<=\\.|\\|)"); // '.' or '|' Partition
+
+            StringBuilder formattedText = new StringBuilder();
+
+            // Define total width for alignment
+            int totalWidth = 50; // Customize this width as needed
+            String header = "------------- About This Item -------------";
+
+            // Calculate padding for center alignment
+            int padding = (totalWidth - header.length()) / 2;
+
+            // Add spaces for center alignment and append the header
+            formattedText.append(" ".repeat(Math.max(0, padding))); // Add spaces
+            formattedText.append(header).append("\n");
+
+            for (String paragraph : paragraphs) {
+                if (!paragraph.trim().isEmpty()) {
+                    formattedText.append("• ").append(paragraph.trim()).append("\n\n");
+                }
+            }
+
+            // Add footer
+            String footer = "-------------------------------------";
+            padding = (totalWidth - footer.length()) / 2; // Recalculate padding for footer
+            formattedText.append(" ".repeat(Math.max(0, padding))); // Add spaces for footer alignment
+            formattedText.append(footer).append("\n");
+
+            return formattedText.toString().trim();
+
+        }
+
+        private String cleanHTMLTags(String html) {
+            // HTML टैग्स हटाने के लिए Regex और &lrm; को हटाने के लिए
+            String cleanedHtml = html.replaceAll("<[^>]*>", ""); // remove HTML
+            cleanedHtml = cleanedHtml.replaceAll("&lrm;", ""); // remove &lrm;
+            cleanedHtml = cleanedHtml.replaceAll("&rlm;", ""); // remove &rlm;
+            cleanedHtml = cleanedHtml.replaceAll("       ", "");
+            cleanedHtml = cleanedHtml.replaceAll("About this item", "");
+            cleanedHtml = cleanedHtml.replaceAll("[;\\[\\]]", "");
+
+            return cleanedHtml.trim();
+        }
+    }
+    private class AdditionalInformation extends AsyncTask<String, Void, String> {
+
+        private boolean isSuccessful = false; // Track if the data was successfully retrieved
+        private static final int MAX_RETRY_COUNT = 3; // Maximum retry count
+
+        @Override
+        protected String doInBackground(String... urls) {
+            String url = urls[0];
+            int retryCount = 0;
+            String result = "Not Found";
+
+            while (retryCount < MAX_RETRY_COUNT) {
+                try {
+                    // HTTP connection setup
+                    URL urlObj = new URL(url);
+                    HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                    connection.setRequestProperty("Referrer", "https://www.amazon.in");
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(15000);
+                    connection.setUseCaches(false);
+
+                    // Check HTTP response code
+                    int responseCode = connection.getResponseCode();
+                    Log.d("HTTP Response Code", String.valueOf(responseCode));
+
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        // Read HTML content
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                        StringBuilder htmlContent = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            htmlContent.append(line);
+                        }
+                        reader.close();
+
+                        additionalInformation_STRng = extractData(htmlContent.toString(), "<div id=\"productDetails_db_sections\".*?>(.*?)</div>");
+                        additionalInformation_STRng = formatAdditionalInformationPlainText(additionalInformation_STRng);
+                        additionalInformation_STRng = additionalInformation_STRng.replaceAll("<[^>]*>", ""); // Remove all HTML tags
+
+                        Log.i(TAG,"additionalInformation_STRng :"+additionalInformation_STRng);
+
+                        if (additionalInformation_STRng.equals("Not Found")){
+                            retryCount++;
+                            Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
+                            continue; // Retry fetching data
+                        }
+
+                        if (additionalInformation_STRng != null){
+                            isSuccessful = true; // Successfully retrieved data
+                            break; // Exit loop after success
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.i(TAG, "Error fetching data: " + e.getMessage());
+                    retryCount++; // Increment retry count on error
+                    Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (isSuccessful) {
+                // Check and set visibility for 'aboutThisItem_STRng' and 'about_this_item_Txt'
+                if (additionalInformation_STRng == null || additionalInformation_STRng.trim().isEmpty()) {
+                    additional_information_Txt.setVisibility(View.GONE); // Make TextView gone
+                } else {
+                    additional_information_Txt.setVisibility(View.VISIBLE); // If not null, make it visible
+                    additional_information_Txt.setText(additionalInformation_STRng); // Set text if needed
+                }
+
+                Toast.makeText(MainActivity.this, "Image Load Successful...", Toast.LENGTH_SHORT).show();
+            } else {
+                // All attempts failed
+                Toast.makeText(MainActivity.this, "Failed to retrieve data after multiple attempts.", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        private String extractData(String html, String regex) {
+            try {
+                // Trim and process the data
+                productName_STRng = productName_STRng != null ? productName_STRng.replace("","").trim() : "Name not found";
+                productPrice_STRng = productPrice_STRng != null ? productPrice_STRng.replace(",","").trim() : "Price not found";
+                discount_STRng = discount_STRng != null ? discount_STRng.replace("-", "").replace("%", "").trim() : "Discount not found";
+                mrpPrice_STRng = mrpPrice_STRng != null ? mrpPrice_STRng.replace(",","").trim() : "MRP not found";
+
+                Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+                Matcher matcher = pattern.matcher(html);
+                if (matcher.find()) {
+                    return matcher.group(1);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+        private String formatAdditionalInformationPlainText(String additionalInformation) {
+            // Check if additional information is empty
+            if (additionalInformation == null || additionalInformation.isEmpty()) {
+                return "Not Found";
+            }
+
+            // Regex to match the key-value pairs in the table
+            Pattern liPattern = Pattern.compile("<tr>\\s*<th.*?>\\s*(.*?)\\s*</th>\\s*<td.*?>\\s*(.*?)\\s*</td>\\s*</tr>", Pattern.DOTALL);
+            Matcher liMatcher = liPattern.matcher(additionalInformation);
+
+            // Build the formatted output
+            StringBuilder formattedDetails = new StringBuilder();
+            formattedDetails.append("----------- Additional Information -----------\n");
+
+            // Loop through each matched <tr> and create bullet points
+            while (liMatcher.find()) {
+                String key = liMatcher.group(1).trim();
+                String value = liMatcher.group(2).trim();
+
+                // Add bullet point and key-value pair
+                formattedDetails.append("• ").append(key).append(": ").append(value).append("\n");
+            }
+
+            formattedDetails.append("---------------------------------------------\n");
+            return formattedDetails.toString().trim();
+        }
+    }
+    private class AddMore extends AsyncTask<String, Void, String> {
+
+        private boolean isSuccessful = false; // Track if the data was successfully retrieved
+        private static final int MAX_RETRY_COUNT = 3; // Maximum retry count
+
+        @Override
+        protected String doInBackground(String... urls) {
+            String url = urls[0];
+            int retryCount = 0;
+            String result = "Not Found";
+
+            while (retryCount < MAX_RETRY_COUNT) {
+                try {
+                    // HTTP connection setup
+                    URL urlObj = new URL(url);
+                    HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                    connection.setRequestProperty("Referrer", "https://www.amazon.in");
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(15000);
+                    connection.setUseCaches(false);
+
+                    // Check HTTP response code
+                    int responseCode = connection.getResponseCode();
+                    Log.d("HTTP Response Code", String.valueOf(responseCode));
+
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        // Read HTML content
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                        StringBuilder htmlContent = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            htmlContent.append(line);
+                        }
+                        reader.close();
+
+                        productInformation_STRng = extractAndFormatTable(htmlContent.toString(), "<table id=\"productDetails_techSpec_section_1\".*?>(.*?)</table>");//1 se 2 niche;
+                        productInformation_STRng = productInformation_STRng != null ? cleanHTMLTags(productInformation_STRng) : "Not Found";//2;
+
+
+                        Log.i(TAG, "productInformation_STRng : "+productInformation_STRng);
+
+                        product_details_STRng = extractData(htmlContent.toString(), "<ul class=\"a-unordered-list a-nostyle a-vertical a-spacing-none detail-bullet-list\">(.*?)</ul>");//1 to 5
+                        product_details_STRng = formatProductDetailsPlainText(product_details_STRng);//2
+                        product_details_STRng = product_details_STRng != null ? product_details_STRng.replace("&lrm;","").trim() : "Name not found";//3
+                        product_details_STRng = product_details_STRng != null ? product_details_STRng.replace("&rlm;","").trim() : "Name not found";//4
+                        product_details_STRng = product_details_STRng.replaceAll("\\s{2,}", " ");//5
+
+                        if (productInformation_STRng.equals("Not Found")){
+                            retryCount++;
+                            Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
+                            continue; // Retry fetching data
+                        }
+
+                        if (productInformation_STRng != null){
+                            isSuccessful = true; // Successfully retrieved data
+                            break; // Exit loop after success
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.i(TAG, "Error fetching data: " + e.getMessage());
+                    retryCount++; // Increment retry count on error
+                    Log.i(TAG, "Retrying... Attempt " + (retryCount + 1));
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (isSuccessful) {
+                // Check and set visibility for 'aboutThisItem_STRng' and 'about_this_item_Txt'
+                if (productInformation_STRng == null || productInformation_STRng.trim().isEmpty()) {
+                    product_information_Txt.setVisibility(View.GONE); // Make TextView gone
+                } else {
+                    product_information_Txt.setVisibility(View.VISIBLE); // If not null, make it visible
+                    product_information_Txt.setText(productInformation_STRng); // Set text if needed
+                }
+
+                if (product_details_STRng == null || product_details_STRng.trim().isEmpty()) {
+                    additional_information_Txt.setVisibility(View.GONE); // Make TextView gone
+                } else {
+                    product_details_Txt.setVisibility(View.VISIBLE); // If not null, make it visible
+                    product_details_Txt.setText(product_details_STRng); // Set text if needed
+                }
+
+                Toast.makeText(MainActivity.this, "Image Load Successful...", Toast.LENGTH_SHORT).show();
+            } else {
+                // All attempts failed
+                Toast.makeText(MainActivity.this, "Failed to retrieve data after multiple attempts.", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        private String extractAndFormatTable(String html, String regex) {
+            Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+            Matcher matcher = pattern.matcher(html);
+            if (matcher.find()) {
+                String tableHtml = matcher.group(1);
+
+                // Extract rows (tr)
+                Pattern rowPattern = Pattern.compile("<tr>(.*?)</tr>", Pattern.DOTALL);
+                Matcher rowMatcher = rowPattern.matcher(tableHtml);
+
+                StringBuilder formattedDetails = new StringBuilder();
+                formattedDetails.append("-------- Product Information --------\n");
+
+                while (rowMatcher.find()) {
+                    String row = rowMatcher.group(1);
+
+                    // Extract header (th) and data (td)
+                    String header = extractData(row, "<th.*?>(.*?)</th>");
+                    String data = extractData(row, "<td.*?>(.*?)</td>");
+
+                    if (header != null && data != null) {
+                        // Clean and format
+                        formattedDetails.append("• ").append(header.trim()).append(": ").append(cleanHTMLTags(data.trim())).append("\n");
+                    }
+                }
+
+                formattedDetails.append("---------------------------------");
+                return formattedDetails.toString();
+            }
+            return null;
+        }
+        private String formatProductDetailsPlainText(String productdetails) {
+            // Check if product details are empty
+            if (productdetails == null || productdetails.isEmpty()) {
+                return "Not Found";
+            }
+
+            // Regex to match <li> elements for key-value pairs
+            Pattern liPattern = Pattern.compile("<li.*?>\\s*<span.*?>\\s*<span class=\"a-text-bold\">(.*?)</span>\\s*<span>(.*?)</span>\\s*</span>\\s*</li>", Pattern.DOTALL);
+            Matcher liMatcher = liPattern.matcher(productdetails);
+
+            // Build the formatted output
+            StringBuilder formattedDetails = new StringBuilder();
+            formattedDetails.append("-----------Product Details-----------\n");
+
+            // Loop through each matched <li> and create bullet points
+            while (liMatcher.find()) {
+                String key = liMatcher.group(1).trim();
+                String value = liMatcher.group(2).trim();
+
+                // Add bullet point and key-value pair
+                formattedDetails.append("• ").append(key).append(": ").append(value).append("\n");
+            }
+
+            formattedDetails.append("-------------------------------------\n");
+            return formattedDetails.toString().trim();
+        }
+
+        private String extractData(String html, String regex) {
+            try {
+                // Trim and process the data
+                productName_STRng = productName_STRng != null ? productName_STRng.replace("","").trim() : "Name not found";
+                productPrice_STRng = productPrice_STRng != null ? productPrice_STRng.replace(",","").trim() : "Price not found";
+                discount_STRng = discount_STRng != null ? discount_STRng.replace("-", "").replace("%", "").trim() : "Discount not found";
+                mrpPrice_STRng = mrpPrice_STRng != null ? mrpPrice_STRng.replace(",","").trim() : "MRP not found";
+
+                Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
+                Matcher matcher = pattern.matcher(html);
+                if (matcher.find()) {
+                    return matcher.group(1);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+        private String formatAdditionalInformationPlainText(String additionalInformation) {
+            // Check if additional information is empty
+            if (additionalInformation == null || additionalInformation.isEmpty()) {
+                return "Not Found";
+            }
+
+            // Regex to match the key-value pairs in the table
+            Pattern liPattern = Pattern.compile("<tr>\\s*<th.*?>\\s*(.*?)\\s*</th>\\s*<td.*?>\\s*(.*?)\\s*</td>\\s*</tr>", Pattern.DOTALL);
+            Matcher liMatcher = liPattern.matcher(additionalInformation);
+
+            // Build the formatted output
+            StringBuilder formattedDetails = new StringBuilder();
+            formattedDetails.append("----------- Additional Information -----------\n");
+
+            // Loop through each matched <tr> and create bullet points
+            while (liMatcher.find()) {
+                String key = liMatcher.group(1).trim();
+                String value = liMatcher.group(2).trim();
+
+                // Add bullet point and key-value pair
+                formattedDetails.append("• ").append(key).append(": ").append(value).append("\n");
+            }
+
+            formattedDetails.append("---------------------------------------------\n");
+            return formattedDetails.toString().trim();
+        }
+
+        private String cleanHTMLTags(String html) {
+            // HTML टैग्स हटाने के लिए Regex और &lrm; को हटाने के लिए
+            String cleanedHtml = html.replaceAll("<[^>]*>", ""); // remove HTML
+            cleanedHtml = cleanedHtml.replaceAll("&lrm;", ""); // remove &lrm;
+            cleanedHtml = cleanedHtml.replaceAll("&rlm;", ""); // remove &rlm;
+            cleanedHtml = cleanedHtml.replaceAll("       ", "");
+            cleanedHtml = cleanedHtml.replaceAll("About this item", "");
+            cleanedHtml = cleanedHtml.replaceAll("[;\\[\\]]", "");
+
+            return cleanedHtml.trim();
+        }
     }
 
     // Function to clean and parse the discount percentage
@@ -343,8 +1024,4 @@ public class MainActivity extends AppCompatActivity {
             return 0; // Return 0 if the percentage is invalid
         }
     }
-
-
-
-
 }

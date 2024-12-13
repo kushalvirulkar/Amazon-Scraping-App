@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    tools:context=".ImageScraping">
+    tools:context=".Activity_Jsoup">
 
     <LinearLayout
         android:id="@+id/main"
@@ -34,6 +33,7 @@
             android:layout_height="wrap_content"
             android:textSize="16sp"
             android:padding="8dp"
+            android:visibility="gone"
             android:inputType="textUri"
             android:textColor="@color/black"
             android:hint="Enter URL will appear here"
@@ -45,8 +45,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/start"
+            android:visibility="gone"
             android:text="Get Data">
         </Button>
+
+        <TextView
+            android:id="@+id/combined_textview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:textSize="16sp"
+            android:scrollbars="vertical"
+            android:overScrollMode="always"
+            android:textColor="@color/black"
+            android:layout_margin="8dp" />
+
 
         <Button
             android:layout_width="wrap_content"

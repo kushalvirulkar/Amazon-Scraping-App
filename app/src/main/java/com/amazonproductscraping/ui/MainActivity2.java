@@ -126,15 +126,6 @@ public class MainActivity2 extends AppCompatActivity {
                             continue; // Retry fetching data
                         }
 
-
-
-                        // If all data is successfully retrieved
-                        /*if (aboutThisItem_STRng != null || productInformation_STRng != null || additionalInformation_STRng != null || technical_details_STRng != null ||
-                                product_details_STRng != null || productSpecifications_STRng != null){
-                            isSuccessful = true; // Successfully retrieved data
-                            break; // Exit loop after success
-                        }*/
-
                         if (additionalInformation_STRng != null){
                             isSuccessful = true; // Successfully retrieved data
                             break; // Exit loop after success
@@ -322,21 +313,6 @@ public class MainActivity2 extends AppCompatActivity {
                 return formattedDetails.toString();
             }
             return null;
-        }
-
-        private String extractAndFormatTableUsingJsoup(String htmlContent) {
-            // Jsoup से HTML डॉक्यूमेंट बनाएं
-            Document doc = Jsoup.parse(htmlContent);
-
-            // productDetails_db_sections को ढूंढें
-            Element productDetailsSection = doc.select("div#productDetails_db_sections").first();
-
-            if (productDetailsSection != null) {
-                // अगर पाया गया तो इसे return करें
-                return productDetailsSection.text();
-            }
-
-            return "Not Found"; // अगर नहीं मिला तो "Not Found" लौटाएं
         }
 
         private String formatAboutThisItem(String aboutText) {

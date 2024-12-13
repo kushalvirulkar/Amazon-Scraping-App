@@ -1,0 +1,111 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- WebView for loading Amazon page -->
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"/>
+
+        <!-- TextView to display the scraped product title -->
+        <TextView
+            android:id="@+id/productTitleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Product Title"
+            android:textColor="@color/black"
+            android:textSize="18sp" />
+
+        <!-- TextView to display the scraped product price -->
+        <TextView
+            android:id="@+id/productPriceTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Product Price"
+            android:textColor="@color/black"
+            android:textSize="18sp" />
+
+        <!-- TextView to display the scraped savings percentage -->
+        <TextView
+            android:id="@+id/savingsPercentageTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Savings Percentage"
+            android:textColor="@color/black"
+            android:textSize="18sp" />
+
+        <!-- TextView to display the scraped MRP price -->
+        <TextView
+            android:id="@+id/mrpPriceTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="MRP Price"
+            android:textColor="@color/black"
+            android:textSize="18sp" />
+
+        <!-- TextView to display the scraped product details -->
+        <TextView
+            android:id="@+id/productDetailsTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Product Details"
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <!-- TextView to display the scraped "About this item" -->
+        <TextView
+            android:id="@+id/aboutThisItemTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="About This Item"
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <!-- TextView to display the scraped additional information -->
+        <TextView
+            android:id="@+id/additionalInfoTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Additional Information"
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <!-- TextView to display the scraped product information (ASIN, Reviews, Brand) -->
+        <TextView
+            android:id="@+id/productInfoTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Product Information"
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/importantInformationTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Important Information"
+            android:textSize="16sp"
+            android:layout_below="@id/productInfoTextView"
+            android:padding="16dp"
+            android:textColor="@color/black" />
+
+
+    </LinearLayout>
+
+</ScrollView>
