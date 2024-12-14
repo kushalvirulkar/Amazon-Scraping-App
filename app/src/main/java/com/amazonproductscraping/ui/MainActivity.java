@@ -123,7 +123,6 @@ public class MainActivity extends AppCompatActivity {
                     List<String> imageUrls = new ArrayList<>();
 
                     try {
-
                         if (urlString.equals(urlString)){
                             URL url = new URL(urlString);
                             connection = (HttpURLConnection) url.openConnection();
@@ -151,10 +150,13 @@ public class MainActivity extends AppCompatActivity {
                                 if (!imageUrls.contains(imageUrl)) {
                                     imageUrls.add(imageUrl);
                                 }
+
+                                // Limit the number of images to 6
+                                if (imageUrls.size() >= 6) {
+                                    break; // Stop adding images once 6 are collected
+                                }
                             }
                         }
-
-
                     } catch (Exception e) {
                         Log.e(TAG, "Error scraping images", e);
                     } finally {
@@ -179,12 +181,11 @@ public class MainActivity extends AppCompatActivity {
                             imageAdapter = new ImageAdapter(imageUrls);
                             recyclerView.setAdapter(imageAdapter);
 
-                            Log.i(TAG, "Images_Loads : "+imageUrls);
-
-                            //textView.setText(imageUrls.toString());
+                            Log.i(TAG, "Images Loaded: " + imageUrls);
                         }
                     });
                 });
+
             }
         }, 5000); // 5000 milliseconds = 5 seconds
     }
