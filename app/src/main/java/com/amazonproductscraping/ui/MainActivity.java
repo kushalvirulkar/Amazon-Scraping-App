@@ -32,12 +32,11 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "Webview_Scrap";
+    private static final String TAG = "MainActivity";
     private Button startButton,show;
     private RecyclerView recyclerView;
     private ImageAdapter imageAdapter;
-    private List<String> imageUrls = new ArrayList<>();
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private EditText editText;
     private WebView webView;
     private TextView productTitleTextView;
@@ -189,7 +188,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }, 5000); // 5000 milliseconds = 5 seconds
     }
-
 
     private void Webview_Scraping(String amazonUrlStRng) {
         // Set custom User-Agent
