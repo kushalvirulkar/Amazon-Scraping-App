@@ -3,6 +3,10 @@ package com.amazonproductscraping.ui;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -10,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.amazonproductscraping.ui.Adapter.ImageAdapter;
 
@@ -18,6 +24,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,32 +34,45 @@ import java.util.regex.Pattern;
 public class scrapeImages extends AppCompatActivity {
     private static final String TAG = "scrapeImages";
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private RecyclerView recyclerView;
+    private ImageAdapter imageAdapter;
+    private WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        String amazonUrl_STRng = "https://www.amazon.in/dp/B0CY5HQ8V1/ref=sspa_dk_detail_5?pd_rd_i=B0CY5HQ8V1&pd_rd_w=qHMwZ&content-id=amzn1.sym.9f1cb690-f0b7-44de-b6ff-1bad1e37d3f0&pf_rd_p=9f1cb690-f0b7-44de-b6ff-1bad1e37d3f0&pf_rd_r=DX8TBDHZ0G7GJ6ZYXSKJ&pd_rd_wg=zFpxl&pd_rd_r=1fdec38c-ebde-42af-b950-5a0717500643&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWxfdGhlbWF0aWM&th=1";
+        // Set the content view before accessing views
+        setContentView(R.layout.activity_scrape_images); // Make sure this layout contains the RecyclerView
+
+        recyclerView = findViewById(R.id.recyclerView);
+        webView = findViewById(R.id.webView);
+
+        String amazonUrl_STRng = "https://www.amazon.in/gp/product/B0C1YH6BLR";
         scrapeImagess(amazonUrl_STRng);
+
+        // Now that RecyclerView is initialized, set layout manager
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(layoutManager);
     }
 
     //Image Scraping
     private void scrapeImagess(String urlString) {
-
-        executorService.execute(() -> {
+        /*executorService.execute(() -> {
             HttpURLConnection connection = null;
             BufferedReader reader = null;
             List<String> imageUrls = new ArrayList<>();
 
             try {
-                if (urlString.equals(urlString)){
+                // Amazon URL se data fetch karte hain
+                if (urlString.equals(urlString)) {
                     URL url = new URL(urlString);
                     connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
                     connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                     connection.connect();
 
-                    // Read the response
+                    // Response read karte hain
                     reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                     StringBuilder html = new StringBuilder();
                     String line;
@@ -63,19 +83,15 @@ public class scrapeImages extends AppCompatActivity {
 
                     String htmlContent = html.toString();
 
-                    // Regex to extract hiRes image URLs
+                    // Regex se hiRes image URLs ko extract karna
                     Pattern pattern = Pattern.compile("\"hiRes\":\"(https:\\/\\/m\\.media-amazon\\.com\\/images\\/I\\/[^\" ]+)\"");
                     Matcher matcher = pattern.matcher(htmlContent);
 
+                    // Sabhi image URLs ko collect karte hain
                     while (matcher.find()) {
-                        String imageUrl = matcher.group(1).replace("\\/", "/"); // Fix escaped slashes
+                        String imageUrl = matcher.group(1).replace("\\/", "/"); // Escaped slashes ko fix karte hain
                         if (!imageUrls.contains(imageUrl)) {
                             imageUrls.add(imageUrl);
-                        }
-
-                        // Limit the number of images to 6
-                        if (imageUrls.size() >= 1) {
-                            break; // Stop adding images once 6 are collected
                         }
                     }
                 }
@@ -94,19 +110,85 @@ public class scrapeImages extends AppCompatActivity {
                 }
             }
 
-            // Update the UI on the main thread
+            // UI ko update karte hain main thread par
             runOnUiThread(() -> {
                 if (imageUrls.isEmpty()) {
                     Toast.makeText(scrapeImages.this, "No images found!", Toast.LENGTH_SHORT).show();
                 } else {
                     Log.d(TAG, "Loaded Images: " + imageUrls.size());
-                    //imageAdapter = new ImageAdapter(imageUrls);
-                    //recyclerView.setAdapter(imageAdapter);
+                    // UI ko image URLs ke saath update karte hain (RecyclerView adapter)
+                    imageAdapter = new ImageAdapter(imageUrls);
+                    recyclerView.setAdapter(imageAdapter);
 
-                    Log.i(TAG, "Images_Loaded: " + imageUrls);
+                    Log.i(TAG, "Images Loaded: " + imageUrls);
+                }
+            });
+        });*/
+
+        executorService.execute(() -> {
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
+            List<String> imageUrls = new ArrayList<>();
+
+            try {
+                // Amazon URL से डेटा फेच करना
+                URL url = new URL(urlString);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                connection.connect();
+
+                // पेज का HTML पढ़ना
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder html = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    html.append(line);
+                }
+
+                String htmlContent = html.toString();
+
+                // Regex से hiRes इमेज URLs निकालना
+                Pattern pattern = Pattern.compile("\"hiRes\":\"(https://m\\.media-amazon\\.com/images/I/[^\"]+)\"");
+                Matcher matcher = pattern.matcher(htmlContent);
+
+                while (matcher.find()) {
+                    String imageUrl = matcher.group(1).replace("\\/", "/"); // Escaped स्लैशेस को सही करना
+                    if (!imageUrls.contains(imageUrl)) {
+                        imageUrls.add(imageUrl);
+                    }
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error scraping images", e);
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+
+            // UI को अपडेट करना (Main Thread पर)
+            runOnUiThread(() -> {
+                if (imageUrls.isEmpty()) {
+                    Toast.makeText(scrapeImages.this, "No images found!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.d(TAG, "Loaded Images: " + imageUrls.size());
+                    imageAdapter = new ImageAdapter(imageUrls);
+                    recyclerView.setAdapter(imageAdapter);
                 }
             });
         });
+
+
     }
+
 
 }
