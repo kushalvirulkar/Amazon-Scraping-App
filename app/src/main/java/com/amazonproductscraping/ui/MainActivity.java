@@ -19,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.amazonproductscraping.ui.Adapter.ImageAdapter;
+import com.amazonproductscraping.ui.Interface.OnGet_ItemListener;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -49,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView productInfoTextView;
     private TextView importantInformationTextView;
     private String amazonUrl_STRng;
+    private OnGet_ItemListener mListener;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -177,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(MainActivity.this, "No images found!", Toast.LENGTH_SHORT).show();
                         } else {
                             Log.d(TAG, "Loaded Images: " + imageUrls.size());
-                            imageAdapter = new ImageAdapter(imageUrls);
+                            imageAdapter = new ImageAdapter(imageUrls,mListener);
                             recyclerView.setAdapter(imageAdapter);
 
                             Log.i(TAG, "Images Loaded: " + imageUrls);
@@ -277,6 +280,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+
+
 
                 // Add a delay to ensure content is fully loaded
                 new Handler().postDelayed(() -> {

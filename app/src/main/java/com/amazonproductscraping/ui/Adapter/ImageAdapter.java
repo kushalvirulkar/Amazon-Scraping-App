@@ -1,15 +1,21 @@
 package com.amazonproductscraping.ui.Adapter;
 
+import android.annotation.SuppressLint;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.amazonproductscraping.ui.Interface.OnGet_ItemListener;
 import com.amazonproductscraping.ui.R;
 import com.bumptech.glide.Glide;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -17,9 +23,11 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
 
     private List<String> imageUrls;
     private static final String TAG = "ImageAdapter";
+    private final OnGet_ItemListener mListener;
 
-    public ImageAdapter(List<String> imageUrls) {
+    public ImageAdapter(List<String> imageUrls,OnGet_ItemListener Listener) {
         this.imageUrls = imageUrls;
+        mListener = Listener;
     }
 
     @NonNull
@@ -30,11 +38,28 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ImageViewHolder holder, @SuppressLint("RecyclerView") int position) {
         String imageUrl = imageUrls.get(position);
-        Glide.with(holder.itemView.getContext())
+        Picasso.get()
                 .load(imageUrl)
-                .into(holder.imageView);
+                .into(holder.imageView, new Callback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "Image loaded successfully");
+                        Toast.makeText(holder.itemView.getContext(), "Image loaded successfully", Toast.LENGTH_SHORT).show();
+                        mListener.onGetItem(imageUrls.get(position));
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Log.e(TAG, "Image load failed", e);
+                        Toast.makeText(holder.itemView.getContext(), "Failed to load image", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+
+
+
     }
 
     @Override

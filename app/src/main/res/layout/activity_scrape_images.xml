@@ -9,14 +9,6 @@
     tools:context=".scrapeImages">
 
 
-    <WebView
-        android:id="@+id/webView"
-        android:layout_width="200dp"
-        android:layout_height="150dp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
@@ -25,5 +17,13 @@
         android:layout_marginBottom="16dp"
         android:padding="8dp">
     </androidx.recyclerview.widget.RecyclerView>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/check"
+        android:text="check"
+        android:layout_gravity="center">
+    </Button>
 
 </LinearLayout>
