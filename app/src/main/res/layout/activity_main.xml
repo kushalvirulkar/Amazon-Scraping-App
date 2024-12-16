@@ -73,7 +73,7 @@
 
 
             <!-- TextView to display the scraped product title -->
-            <TextView
+            <EditText
                 android:id="@+id/productTitleTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -103,7 +103,7 @@
                 android:textSize="18sp" />
 
             <!-- TextView to display the scraped MRP price -->
-            <TextView
+            <EditText
                 android:id="@+id/mrpPriceTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

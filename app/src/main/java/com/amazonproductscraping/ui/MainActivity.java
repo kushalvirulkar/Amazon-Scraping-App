@@ -41,10 +41,10 @@ public class MainActivity extends AppCompatActivity {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private EditText editText;
     private WebView webView;
-    private TextView productTitleTextView;
+    private EditText productTitleTextView;
     private TextView productPriceTextView;
     private TextView savingsPercentageTextView;
-    private TextView mrpPriceTextView;
+    private EditText mrpPriceTextView;
     private TextView productDetailsTextView;
     private TextView aboutThisItemTextView;
     private TextView additionalInfoTextView;
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (isValidUrl(enteredUrl)) {
                 amazonUrl_STRng = enteredUrl;
-                scrapeImages(amazonUrl_STRng); // Start scraping
+                //scrapeImages(amazonUrl_STRng); // Start scraping
                 // Start product data scraping
                 Webview_Scraping(amazonUrl_STRng); // Start product data scraping
 
@@ -204,25 +204,29 @@ public class MainActivity extends AppCompatActivity {
                                        String additionalInfo, String productInfo,String importantInformation) {
                 runOnUiThread(() -> {
                     if (title != null && !title.isEmpty()) {
-                        productTitleTextView.setText("Title: " + title);
+                        productTitleTextView.setText(title);
+                        Log.i(TAG, "productTitleTextView : "+title);
                     } else {
                         productTitleTextView.setText("Title not found");
                     }
 
                     if (price != null && !price.isEmpty()) {
-                        productPriceTextView.setText("Price: " + price);
+                        String p = price.replace("₹","").replace(",","").trim();
+                        productPriceTextView.setText(p);
                     } else {
                         productPriceTextView.setText("Price not found");
                     }
 
                     if (savings != null && !savings.isEmpty()) {
-                        savingsPercentageTextView.setText("Savings: " + savings);
+                        String s = savings.replace("-","").replace("%","").trim();
+                        savingsPercentageTextView.setText(s);
                     } else {
                         savingsPercentageTextView.setText("Savings not found");
                     }
 
                     if (mrp != null && !mrp.isEmpty()) {
-                        mrpPriceTextView.setText("MRP: " + mrp);
+                        String m = mrp.replace(",","").trim();
+                        mrpPriceTextView.setText(m);
                     } else {
                         mrpPriceTextView.setText("MRP not found");
                     }
@@ -298,8 +302,9 @@ public class MainActivity extends AppCompatActivity {
                                     "var savings = savingsElement ? savingsElement.innerText.trim() : 'Savings not found';" +
 
                                     // Extract MRP Price and Remove ₹ Symbol
-                                    "var mrpElement = document.querySelector('span.a-price.a-text-price span.a-offscreen');" +
-                                    "var mrp = mrpElement ? mrpElement.innerText.trim().replace('M.R.P.: ₹', '').replace('₹', '') : 'MRP not found';" +
+                                    "var mrpParent = document.querySelector('div.a-section.a-spacing-small.aok-align-center');\n" +
+                                    "var mrpElement = mrpParent ? mrpParent.querySelector('.a-price.a-text-price .a-offscreen') : null;\n" +
+                                    "var mrp = mrpElement ? mrpElement.innerText.trim().replace('₹', '').trim() : 'MRP not found';" +
 
                                     // Extract Product Details, About This Item, and Additional Information
                                     "var productDetails = '-----------  Product Details  -----------\\n';\n" +
