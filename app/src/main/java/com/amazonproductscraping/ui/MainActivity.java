@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Image Scraping
-    private void scrapeImages(String urlString) {
+    /*private void scrapeImages(String urlString) {
 
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -190,7 +190,98 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }, 5000); // 5000 milliseconds = 5 seconds
+    }*/
+
+    private void scrapeImages(String urlString) {
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                executorService.execute(() -> {
+                    HttpURLConnection connection = null;
+                    BufferedReader reader = null;
+                    List<String> imageUrls = new ArrayList<>();
+                    List<String> imageNames = new ArrayList<>(); // To store filenames
+
+                    try {
+                        if (urlString.equals(urlString)) {
+                            URL url = new URL(urlString);
+                            connection = (HttpURLConnection) url.openConnection();
+                            connection.setRequestMethod("GET");
+                            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                            connection.connect();
+
+                            // Read the response
+                            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                            StringBuilder html = new StringBuilder();
+                            String line;
+
+                            while ((line = reader.readLine()) != null) {
+                                html.append(line);
+                            }
+
+                            String htmlContent = html.toString();
+
+                            // Regex to extract hiRes image URLs
+                            Pattern pattern = Pattern.compile("\"hiRes\":\"(https:\\/\\/m\\.media-amazon\\.com\\/images\\/I\\/[^\" ]+)\"");
+                            Matcher matcher = pattern.matcher(htmlContent);
+
+                            while (matcher.find()) {
+                                String imageUrl = matcher.group(1).replace("\\/", "/"); // Fix escaped slashes
+                                if (!imageUrls.contains(imageUrl)) {
+                                    imageUrls.add(imageUrl);
+
+                                    // Extract image filename from URL
+                                    String[] urlParts = imageUrl.split("/"); // Split by '/'
+                                    String imageName = urlParts[urlParts.length - 1]; // Get the last part
+                                    imageNames.add(imageName); // Add to the filenames list
+                                }
+
+                                // Limit the number of images to Mininum 6 And Maximum 12
+                                if (imageUrls.size() >= 12) {
+                                    break; // Stop adding images once 6 are collected
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error scraping images", e);
+                    } finally {
+                        if (reader != null) {
+                            try {
+                                reader.close();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        if (connection != null) {
+                            connection.disconnect();
+                        }
+                    }
+
+                    // Update the UI on the main thread
+                    runOnUiThread(() -> {
+                        if (imageUrls.isEmpty()) {
+                            Toast.makeText(MainActivity.this, "No images found!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Log.d(TAG, "Loaded Images: " + imageUrls.size());
+
+                            // Display filenames in the log (or use elsewhere)
+                            for (String imageName : imageNames) {
+                                Log.d(TAG, "Image Name: " + imageName);
+                            }
+
+                            // Update the RecyclerView with image URLs
+                            imageAdapter = new ImageAdapter(imageUrls, mListener);
+                            recyclerView.setAdapter(imageAdapter);
+
+                            Log.i(TAG, "Images Loaded: " + imageUrls);
+                        }
+                    });
+                });
+            }
+        }, 5000); // 5000 milliseconds = 5 seconds
     }
+
 
     private void Webview_Scraping(String amazonUrlStRng) {
         // Set custom User-Agent
