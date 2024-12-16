@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(MainActivity.this, "No images found!", Toast.LENGTH_SHORT).show();
                         } else {
                             Log.d(TAG, "Loaded Images: " + imageUrls.size());
-                            imageAdapter = new ImageAdapter(imageUrls,mListener,MainActivity.this);
+                            imageAdapter = new ImageAdapter(imageUrls,mListener);
                             recyclerView.setAdapter(imageAdapter);
 
                             Log.i(TAG, "Images Loaded: " + imageUrls);

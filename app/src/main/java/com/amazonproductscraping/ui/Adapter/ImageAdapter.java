@@ -25,9 +25,8 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     private List<String> imageUrls;
     private static final String TAG = "ImageAdapter";
     private final OnGet_ItemListener mListener;
-    private Context mContext;
 
-    public ImageAdapter(List<String> imageUrls,OnGet_ItemListener Listener, Context mContext) {
+    public ImageAdapter(List<String> imageUrls,OnGet_ItemListener Listener) {
         this.imageUrls = imageUrls;
         mListener = Listener;
     }

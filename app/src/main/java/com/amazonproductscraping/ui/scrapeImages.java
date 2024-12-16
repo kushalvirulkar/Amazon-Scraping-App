@@ -122,7 +122,7 @@ public class scrapeImages extends AppCompatActivity implements OnGet_ItemListene
                     Toast.makeText(scrapeImages.this, "No images found!", Toast.LENGTH_SHORT).show();
                 } else {
                     Log.d(TAG, "Loaded Images: " + imageUrls.size());
-                    imageAdapter = new ImageAdapter(imageUrls,mListner,scrapeImages.this);
+                    imageAdapter = new ImageAdapter(imageUrls,mListner);
                     recyclerView.setAdapter(imageAdapter);
 
                     ReceiveData = imageUrls.toString();
