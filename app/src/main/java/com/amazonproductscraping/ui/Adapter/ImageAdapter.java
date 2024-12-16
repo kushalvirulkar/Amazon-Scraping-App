@@ -42,30 +42,13 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     @Override
     public void onBindViewHolder(@NonNull ImageViewHolder holder, @SuppressLint("RecyclerView") int position) {
         String imageUrl = imageUrls.get(position);
-        //Glide.with(mContext).load(imageUrls.get(position)).into(holder.imageView);
-        Picasso.get()
-                .load(imageUrl)
-                .into(holder.imageView, new Callback() {
-                    @Override
-                    public void onSuccess() {
-                        Log.d(TAG, "Image loaded successfully");
-                        Toast.makeText(holder.itemView.getContext(), "Image loaded successfully", Toast.LENGTH_SHORT).show();
-
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        Log.e(TAG, "Image load failed", e);
-                        Toast.makeText(holder.itemView.getContext(), "Failed to load image", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-
-        // Check if listener is not null before calling
-        if (mListener != null) {
-            mListener.onGetItem(imageUrls.get(position));
+        // Context check before loading the image using Glide
+        if (holder.itemView.getContext() != null) {
+            Glide.with(holder.itemView.getContext())
+                    .load(imageUrl)
+                    .into(holder.imageView);
         } else {
-            Log.e(TAG, "mListener is null. Unable to call onGetItem.");
+            Log.e(TAG, "Context is null, can't load image.");
         }
 
     }
