@@ -1,6 +1,7 @@
 package com.amazonproductscraping.ui.Adapter;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,8 +25,9 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     private List<String> imageUrls;
     private static final String TAG = "ImageAdapter";
     private final OnGet_ItemListener mListener;
+    private Context mContext;
 
-    public ImageAdapter(List<String> imageUrls,OnGet_ItemListener Listener) {
+    public ImageAdapter(List<String> imageUrls,OnGet_ItemListener Listener, Context mContext) {
         this.imageUrls = imageUrls;
         mListener = Listener;
     }
@@ -40,6 +42,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     @Override
     public void onBindViewHolder(@NonNull ImageViewHolder holder, @SuppressLint("RecyclerView") int position) {
         String imageUrl = imageUrls.get(position);
+        //Glide.with(mContext).load(imageUrls.get(position)).into(holder.imageView);
         Picasso.get()
                 .load(imageUrl)
                 .into(holder.imageView, new Callback() {
@@ -47,7 +50,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
                     public void onSuccess() {
                         Log.d(TAG, "Image loaded successfully");
                         Toast.makeText(holder.itemView.getContext(), "Image loaded successfully", Toast.LENGTH_SHORT).show();
-                        mListener.onGetItem(imageUrls.get(position));
+
                     }
 
                     @Override
@@ -58,7 +61,12 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
                 });
 
 
-
+        // Check if listener is not null before calling
+        if (mListener != null) {
+            mListener.onGetItem(imageUrls.get(position));
+        } else {
+            Log.e(TAG, "mListener is null. Unable to call onGetItem.");
+        }
 
     }
 

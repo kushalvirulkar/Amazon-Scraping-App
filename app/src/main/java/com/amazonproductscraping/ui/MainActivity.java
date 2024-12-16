@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (isValidUrl(enteredUrl)) {
                 amazonUrl_STRng = enteredUrl;
-                //scrapeImages(amazonUrl_STRng); // Start scraping
+                scrapeImages(amazonUrl_STRng); // Start scraping
                 // Start product data scraping
                 Webview_Scraping(amazonUrl_STRng); // Start product data scraping
 
@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(MainActivity.this, "No images found!", Toast.LENGTH_SHORT).show();
                         } else {
                             Log.d(TAG, "Loaded Images: " + imageUrls.size());
-                            imageAdapter = new ImageAdapter(imageUrls,mListener);
+                            imageAdapter = new ImageAdapter(imageUrls,mListener,MainActivity.this);
                             recyclerView.setAdapter(imageAdapter);
 
                             Log.i(TAG, "Images Loaded: " + imageUrls);
