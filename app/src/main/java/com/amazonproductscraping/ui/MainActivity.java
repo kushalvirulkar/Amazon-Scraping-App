@@ -281,8 +281,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }, 5000); // 5000 milliseconds = 5 seconds
     }
-
-
     private void Webview_Scraping(String amazonUrlStRng) {
         // Set custom User-Agent
         webView.getSettings().setUserAgentString(

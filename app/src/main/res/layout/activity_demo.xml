@@ -1,0 +1,106 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@color/white"
+    tools:context=".Demo">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- WebView for loading Amazon page -->
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="200dp"
+            android:layout_height="150dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <EditText
+                    android:id="@+id/edittext"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:padding="8dp"
+                    android:inputType="textUri"
+                    android:textColor="@color/black"
+                    android:hint="Enter URL will appear here"
+                    android:textColorHint="@color/black" >
+                </EditText>
+
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/start"
+                    android:text="Get Data">
+                </Button>
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:id="@+id/show"
+                    android:text="Show">
+                </Button>
+
+            </LinearLayout>
+
+
+            <!-- TextView to display the scraped product price -->
+            <TextView
+                android:id="@+id/productPriceTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Product Price"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+
+            <!-- TextView to display the scraped savings percentage -->
+            <TextView
+                android:id="@+id/savingsPercentageTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Savings Percentage"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+
+            <!-- TextView to display the scraped MRP price -->
+            <EditText
+                android:id="@+id/mrpPriceTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="MRP Price"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+
+            <!-- TextView to display the scraped product details -->
+
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+
+</ScrollView>
